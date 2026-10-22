@@ -13,6 +13,16 @@ play (a standard technique for keeping the branching factor small on large
 boards) in DEMO/COMPETITION modes; AUTOGRADER mode always uses the full,
 unrestricted, row-major move order so that grading leaf counts match the
 reference implementation exactly.
+
+Dialog: a persona named "Kitti" (see the KITTI_LINES bank and
+_generate_utterance below). Utterances are produced by an IF-THEN rule
+engine driven off the live search statistics and a short game history, with
+an optional LLM (Claude, via the Anthropic SDK) layered on top for the
+free-form commentary and the "what's your take" story feature. The LLM is
+never imported unless playing_mode is DEMO, is read from the
+ANTHROPIC_API_KEY environment variable (never hard-coded -- see the
+Learning Diary for why), and every call path falls back to the rule-based
+lines on any failure so the agent always keeps playing.
 '''
 
 from agent_base import KAgent
@@ -24,8 +34,36 @@ STUDENT_IDS = ['your_student_id']  # filename, e.g. jsmith99_KInARow.py.
 
 import time
 import random
+import os
+import re
 
 WIN_SCORE = 1.0e9
+
+# ----------------------------------------------------------------------
+# Kaomoji safety net (provided form in the assignment spec): collapses any
+# run of two-or-more kaomoji in a row (whether hand-written or LLM-written)
+# down to just the first one, since Kitti's voice rule is "never two in a
+# row" but neither the templates nor an LLM can be trusted to always honor
+# that on their own.
+# ----------------------------------------------------------------------
+KAOMOJI = {
+    'happy':   ["^-^", "(=^･ω･^=)", "ฅ^•ﻌ•^ฅ", "(๑>◡<๑)", ":3"],
+    'smug':    ["(￣▽￣)", ">:3", "(=ↀωↀ=)", "(¬‿¬)"],
+    'nervous': [";-;", ">.<", "(╥﹏╥)", "(=ＴェＴ=)", "/ᐠ｡ꞈ｡ᐟ\\"],
+    'confused': ["@~@", "@_@", "(・・?)", "(=^‥^=)?", "(°ロ°)"],
+    'celebrate': ["(ﾉ◕ヮ◕)ﾉ*:・ﾟ✧", "✧٩(ˊᗜˋ*)و✧", "ᕦ(=^･ω･^=)ᕤ"],
+    'signoff': ["/ᐠ - ˕ -マ", "ᓚᘏᗢ", "₍^. .^₎⟆", "(ฅ'ω'ฅ)"],
+}
+ALL_FACES = [f for group in KAOMOJI.values() for f in group]
+_FACE_PATTERN = "|".join(re.escape(f) for f in sorted(ALL_FACES, key=len, reverse=True))
+_DOUBLE_FACE_RE = re.compile(r"(" + _FACE_PATTERN + r")(?:\s*(?:" + _FACE_PATTERN + r"))+")
+
+
+def no_double_faces(text):
+    '''Collapse any run of 2+ kaomoji down to the first one.'''
+    if not text:
+        return text
+    return _DOUBLE_FACE_RE.sub(r"\1", text)
 
 
 class _SearchTimeout(Exception):
@@ -38,13 +76,17 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
 
     def __init__(self, twin=False):
         self.twin = twin
-        self.nickname = 'Vector'
+        self.nickname = 'Kitti'
         if twin:
-            self.nickname = 'Covector'
-        self.long_name = 'Alpha Vector'
+            self.nickname = 'Mochi'
+        self.long_name = 'Kitti ' + KAOMOJI['happy'][2]
         if twin:
-            self.long_name += ' (Twin)'
-        self.persona = 'confident, terse strategist'
+            self.long_name = 'Mochi (Kitti\'s twin)'
+        self.persona = ('19-year-old CS sophomore, boba in hand, plays board '
+                        'games at 2am -- sweet and a little chaotic, secretly '
+                        'very competitive, dramatic when losing, overthinks '
+                        'every move (which is why she can always tell you '
+                        'exactly how many positions she looked at)')
         self.voice_info = {'Chrome': 10, 'Firefox': 2, 'other': 0}
         self.playing = "don't know yet"  # e.g., "X" or "O".
         self.opponent_nickname = None
@@ -52,6 +94,19 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
         self.utterances_matter = True
         self.current_game_type = None
         self.playing_mode = KAgent.DEMO
+
+        # --- Dialog / persona state (Part II) ---
+        self.game_history = []   # list of dicts, see _record_turn()
+        self.move_number = 0
+        self.last_my_eval = 0.0  # my-perspective eval after my previous move
+        self.time_elapsed_this_turn = -1.0
+        self.max_depth_reached_this_turn = -1
+        self.id_stop_reason = None  # 'timeout' | 'max_ply' | 'forced_result'
+        self.best_score_this_turn = None
+        self.second_best_score_this_turn = None
+        self._collect_root_scores = False
+        self._root_children_scores = None
+        self._llm_client = None  # set in prepare() only in DEMO mode
 
         # Per-turn statistics (reset at the top of every make_move call).
         self.alpha_beta_cutoffs_this_turn = -1
@@ -77,7 +132,6 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
         self._zobrist_side = None
         self._deadline = None
         self._dir_ranges_cache = {}
-        self._utt_counter = 0
         # Win-shortcut during search: a huge win for real play (prunes dead
         # subtrees and values forced wins correctly), but it must be OFF in
         # AUTOGRADER mode since the reference leaf counts assume every node
@@ -85,15 +139,23 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
         self._check_wins = True
 
     def introduce(self):
-        name_line = ("My name is " + self.long_name + " (call me " +
-                     self.nickname + ").")
-        author_line = ("I was built by " + AUTHORS + " (" +
-                       ", ".join(STUDENT_IDS) + ").")
-        style_line = ("I search with iterative-deepening alpha-beta pruning "
-                      "and a line-window heuristic. Good luck.")
-        lines = [name_line, author_line, style_line]
         if self.twin:
-            lines.append("I'm the twin instance -- same brain, fresh state.")
+            lines = [
+                "ok hi!! i'm mochi " + KAOMOJI['happy'][1] + " kitti's twin, "
+                "we share a brain but not a game lol",
+                "built by " + AUTHORS + " (" + ", ".join(STUDENT_IDS) + ")",
+                "be nice to me pls (don't actually i want a real game) " +
+                KAOMOJI['happy'][0],
+            ]
+        else:
+            lines = [
+                "ok hi!! i'm kitti " + KAOMOJI['happy'][2] + " be nice to me "
+                "pls (don't actually i want a real game) " + KAOMOJI['happy'][0],
+                "made by " + AUTHORS + " (" + ", ".join(STUDENT_IDS) + "), "
+                "they let me run my own search so don't blame them if i overthink",
+                "i count literally everything in my head so if you ask nicely "
+                "i'll tell you my stats after a move " + KAOMOJI['smug'][3],
+            ]
         return "\n".join(lines) + "\n"
 
     # Receive and acknowledge information about the game from
@@ -111,12 +173,29 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
         self.opponent_nickname = opponent_nickname
         self.expected_time_per_move = expected_time_per_move
         self.utterances_matter = utterances_matter
-        self._utt_counter = 0
         self._dir_ranges_cache = {}
         self._init_zobrist(game_type.n, game_type.m)
 
-        # utterances_matter == False means no LLM/API usage is allowed; this
-        # agent never imports one, so there is nothing further to disable.
+        self.game_history = []
+        self.move_number = 0
+        self.last_my_eval = 0.0
+
+        # LLM setup (Claude via the Anthropic SDK). Only even attempted in
+        # DEMO mode with utterances turned on, per the assignment: never
+        # import a Gen-AI API outside DEMO mode, and never let a missing
+        # SDK/network/quota/key take the agent down -- every failure here
+        # just leaves self._llm_client as None, and _generate_utterance()
+        # always has a full non-LLM fallback for every situation.
+        self._llm_client = None
+        if self.playing_mode == KAgent.DEMO and utterances_matter:
+            try:
+                api_key = os.environ.get('ANTHROPIC_API_KEY')
+                if api_key:
+                    import anthropic  # not imported at module level on purpose
+                    self._llm_client = anthropic.Anthropic(api_key=api_key)
+            except Exception:
+                self._llm_client = None
+
         return "OK"
 
     # ------------------------------------------------------------------
@@ -153,6 +232,11 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
         self.zobrist_table_num_hits_this_turn = 0 if self._use_zobrist else -1
         self.zobrist_num_useful_hits_for_minimax = 0 if self._use_zobrist else -1
         self.zobrist_num_useful_hits_for_ordering = 0 if self._use_zobrist else -1
+        self.max_depth_reached_this_turn = 0
+        self.best_score_this_turn = None
+        self.second_best_score_this_turn = None
+        self._collect_root_scores = False
+        self._root_children_scores = None
 
         if autograder_mode:
             # Fixed, exact-depth search; never time-limited, so that leaf
@@ -176,7 +260,13 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
             move, new_state = self._fallback_move(current_state)
             score = 0.0
 
-        utterance = self._make_utterance(score)
+        self.time_elapsed_this_turn = time.time() - start_time
+
+        if autograder_mode:
+            utterance = "OK"  # Conversation is not evaluated in AUTOGRADER mode.
+        else:
+            utterance = self._generate_utterance(
+                current_state, current_remark, move, new_state, score, start_time)
 
         if autograder_mode:
             stats = {
@@ -197,23 +287,29 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
     # ------------------------------------------------------------------
     def _iterative_deepening(self, state, max_ply, use_alpha_beta):
         best_move, best_state, best_score = None, None, 0.0
+        self.id_stop_reason = 'max_ply'
         depth = 1
         while True:
             try:
                 alpha = float('-inf') if use_alpha_beta else None
                 beta = float('inf') if use_alpha_beta else None
+                self._collect_root_scores = True
                 score, move, new_state = self.minimax(
                     state, depth, pruning=use_alpha_beta, alpha=alpha, beta=beta)
             except _SearchTimeout:
+                self.id_stop_reason = 'timeout'
                 break
             if move is not None:
                 best_move, best_state, best_score = move, new_state, score
+                self.max_depth_reached_this_turn = depth
             if abs(best_score) >= WIN_SCORE:
+                self.id_stop_reason = 'forced_result'
                 break  # Found a forced win/loss; deeper search won't help.
             if max_ply is not None and depth >= max_ply:
                 break
             depth += 1
             if self._deadline is not None and time.time() >= self._deadline:
+                self.id_stop_reason = 'timeout'
                 break
         return best_move, best_state, best_score
 
@@ -247,6 +343,17 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
 
         self._check_time()
         self.num_nodes_visited_this_turn += 1
+
+        # Only the OUTERMOST call made with this flag set collects its
+        # children's exact backed-up values (used for the "best move vs.
+        # runner-up" stats Kitti reports) -- clear it immediately so nested
+        # recursive calls don't mistake themselves for the root. This is
+        # safe because the root's own alpha/beta window is always
+        # unbounded (no parent ever tightens it), so none of the root's
+        # own children are ever skipped by a cutoff -- every root child
+        # gets a complete, exact value, not just a bound.
+        collecting_root_scores = self._collect_root_scores
+        self._collect_root_scores = False
 
         if pruning:
             if alpha is None:
@@ -292,6 +399,7 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
         best_val = float('-inf') if is_max else float('inf')
         best_move = None
         best_state = None
+        root_scores = [] if collecting_root_scores else None
 
         for move, new_state in moves:
             win_result = (winTesterForK(new_state, move, self._k)
@@ -305,6 +413,9 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
             else:
                 child_val = self.minimax(
                     new_state, depth_remaining - 1, pruning, alpha, beta)[0]
+
+            if collecting_root_scores:
+                root_scores.append(child_val)
 
             if is_max:
                 if child_val > best_val:
@@ -327,6 +438,11 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
 
         if self._use_zobrist and tt_key is not None:
             self._tt_write(tt_key, (depth_remaining, best_val, best_move, best_state))
+
+        if collecting_root_scores and root_scores:
+            ranked = sorted(root_scores, reverse=is_max)
+            self.best_score_this_turn = ranked[0]
+            self.second_best_score_this_turn = ranked[1] if len(ranked) > 1 else None
 
         return [best_val, best_move, best_state]
 
@@ -525,53 +641,313 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
         return total
 
     # ------------------------------------------------------------------
-    # Utterances (no LLM / external API required)
+    # Part II: Dialog -- persona "Kitti"
     # ------------------------------------------------------------------
-    OPENING_LINES = [
-        "Claiming the center and the initiative.",
-        "Opening moves set the tone.",
-        "Let's see how you respond to this.",
-    ]
-    WINNING_LINES = [
-        "I see the win from here.",
-        "This line closes it out.",
-        "Forced sequence -- and it ends well for me.",
-    ]
-    LOSING_LINES = [
-        "Tough spot, but I'm not done yet.",
-        "Not my favorite position. I'll make you work for it.",
-    ]
-    BUILDING_LINES = [
-        "Building another threat.",
-        "Stacking the odds in my favor.",
-        "That opens up more lines for me.",
-    ]
-    BLOCKING_LINES = [
-        "Not on my watch -- blocking that.",
-        "I see what you're building. Denied.",
-        "That line stops here.",
-    ]
-    NEUTRAL_LINES = [
-        "A solid, quiet move.",
-        "Keeping my options open.",
-        "Patience. The board will tell me more soon.",
-    ]
+    # Hand-authored lines are the always-available fallback/base behavior
+    # (IF-THEN rule engine below picks a bucket, then a line from it); the
+    # optional Claude call (see prepare()) can replace the chosen bucket's
+    # line with a freshly generated one that still respects the persona,
+    # but every call path is allowed to fail silently back to these.
+    KITTI_LINES = {
+        'opening': [
+            "ok hi!! i'm kitti ฅ^•ﻌ•^ฅ be nice to me pls (don't actually i "
+            "want a real game) ^-^",
+            "mkay here we go, i promise i'm only a little scary (=^･ω･^=)",
+        ],
+        'winning': [
+            "hehe (￣▽￣) i don't wanna say anything but... >:3",
+            "ok i see a path here and it's a cute one for me (¬‿¬)",
+        ],
+        'blocked': [
+            "WAIT. how did you see that ;-; i was so proud of it (=ＴェＴ=)",
+            "wiat. wait* ok rude, i liked that line >.<",
+        ],
+        'danger': [
+            "ok this is fine >.< this is totally fine /ᐠ｡ꞈ｡ᐟ\\",
+            "hmm ok not great not great (╥﹏╥) thinking thinking",
+        ],
+        'doom': [
+            "ok um (=ＴェＴ=) this is not the timeline i wanted but i'm still "
+            "playing it out",
+            "noooo ;-; ok i see it, i'm cooked, still swinging tho (╥﹏╥)",
+        ],
+        'deep_search': [
+            "sorry that took a sec @~@ i was chasing like 6 laser pointers "
+            "in my head",
+            "ok that one needed more counting than usual, lowkey my brain "
+            "hurts @_@",
+        ],
+        'trash_talk': [
+            "big words (¬‿¬) for someone with that left side lol hiss",
+            "ok (=ↀωↀ=) we'll see who's laughing in like 4 moves",
+        ],
+        'quiet': [
+            "*sits here and stares at the board* (=^‥^=)",
+            "ok so. hmm. thinking. (・・?)",
+        ],
+        'wins': [
+            "GG!!! ✧٩(ˊᗜˋ*)و✧ purr-fect game, ok i'm gonna go nap now "
+            "/ᐠ - ˕ -マ",
+        ],
+        'building': [
+            "ngl that felt pawsitive ฅ^•ﻌ•^ฅ",
+            "ok building something here, be scared (๑>◡<๑)",
+        ],
+    }
 
-    def _make_utterance(self, score):
-        if not self.utterances_matter:
-            return "Noted."
-        mine = self.playing if self.playing in ('X', 'O') else 'X'
-        rel = score if mine == 'X' else -score
-        if rel >= WIN_SCORE:
-            bucket = self.WINNING_LINES
-        elif rel <= -WIN_SCORE:
-            bucket = self.LOSING_LINES
-        elif rel > 40:
-            bucket = self.BUILDING_LINES
-        elif rel < -40:
-            bucket = self.BLOCKING_LINES
+    def _pick_line(self, bucket_key):
+        lines = self.KITTI_LINES.get(bucket_key) or self.KITTI_LINES['quiet']
+        return random.choice(lines)
+
+    # -- IF-THEN rule engine: picks which bucket of the persona applies --
+    def _my_relative_eval(self, raw_score):
+        return raw_score if self.playing == 'X' else -raw_score
+
+    TRASH_TALK_KEYWORDS = ('easy', ' ez', 'noob', 'trash', 'bad move',
+                           'nice try', 'get rekt', "you're done", 'loser',
+                           'too easy', 'rip')
+
+    def _looks_like_trash_talk(self, remark):
+        if not remark:
+            return False
+        low = remark.lower()
+        return any(kw in low for kw in self.TRASH_TALK_KEYWORDS)
+
+    def _choose_bucket(self, current_state, current_remark, move, new_state,
+                       score):
+        if self.move_number == 1:
+            return 'opening'
+
+        if self._check_wins:
+            try:
+                if winTesterForK(new_state, move, self._k) != "No win":
+                    return 'wins'
+            except Exception:
+                pass
+
+        my_eval = self._my_relative_eval(score)
+        if my_eval <= -WIN_SCORE:
+            return 'doom'
+
+        pre_move_eval = self._my_relative_eval(
+            self.static_eval(current_state, self.current_game_type))
+        swing_from_opponent = pre_move_eval - self.last_my_eval
+        if swing_from_opponent < -150:
+            return 'blocked'
+
+        if (self.id_stop_reason == 'timeout' or
+                self.time_elapsed_this_turn > 0.5):
+            return 'deep_search'
+
+        if self._looks_like_trash_talk(current_remark):
+            return 'trash_talk'
+
+        if my_eval > 300:
+            return 'building'
+        if my_eval > 120:
+            return 'winning'
+        if my_eval < -120:
+            return 'danger'
+        return 'quiet'
+
+    # -- Part II mandatory feature #1: real search statistics on request --
+    def _stats_explanation(self):
+        nodes = self.num_nodes_visited_this_turn
+        leaves = self.num_leaf_evals_this_turn
+        depth = self.max_depth_reached_this_turn
+        elapsed = self.time_elapsed_this_turn
+        cutoffs = self.alpha_beta_cutoffs_this_turn
+        best = self.best_score_this_turn
+        second = self.second_best_score_this_turn
+
+        if self.id_stop_reason == 'timeout':
+            depth_phrase = "before running out of time"
+        elif self.id_stop_reason == 'forced_result':
+            depth_phrase = "once i was sure how it ends"
         else:
-            bucket = self.NEUTRAL_LINES
-        line = bucket[self._utt_counter % len(bucket)]
-        self._utt_counter += 1
-        return line
+            depth_phrase = "which was as deep as i was allowed to go"
+
+        parts = []
+        parts.append(
+            "ok so you asked for it lol (=^･ω･^=) for that move i looked "
+            "at {nodes:,} positions total, and {leaves:,} of those were "
+            "leaf positions i actually scored.".format(nodes=nodes, leaves=leaves))
+        parts.append(
+            "i got to depth {depth} {phrase} ({elapsed:.2f}s, i'm slow ok "
+            ";-;).".format(depth=depth, phrase=depth_phrase, elapsed=elapsed))
+        parts.append(
+            "i pruned {cutoffs:,} branches with alpha-beta cutoffs, which "
+            "is basically me going \"nope, already know that's worse\" and "
+            "swatting it away ^-^".format(cutoffs=cutoffs))
+        if self._use_zobrist:
+            hits = self.zobrist_table_num_hits_this_turn
+            parts.append(
+                "my zobrist table saved me {hits:,} times from re-scoring "
+                "positions i'd already seen (smart kitty moment "
+                "ฅ^•ﻌ•^ฅ).".format(hits=hits))
+        else:
+            parts.append("i didn't even bother with my zobrist memory trick this move.")
+        if best is not None and second is not None:
+            parts.append(
+                "the best move scored {best:+.0f}, the runner-up was "
+                "{second:+.0f}, so i was pretty sure about this one "
+                "(￣▽￣)".format(best=best, second=second))
+        elif best is not None:
+            parts.append(
+                "honestly there wasn't much of a choice, only one move "
+                "really made sense there (・・?)")
+        return " ".join(parts)
+
+    # -- Part II mandatory feature #2: story + prediction on request --
+    def _story_and_prediction(self):
+        history = self.game_history
+        if len(history) < 2:
+            return ("ok story time (=^･ω･^=) we literally just started, ask "
+                    "me again in a few moves lol ^-^")
+
+        swings = []
+        for i in range(1, len(history)):
+            delta = history[i]['eval_score'] - history[i - 1]['eval_score']
+            swings.append((abs(delta), delta, history[i]))
+        swings.sort(key=lambda t: t[0], reverse=True)
+        turning_points = swings[:4]
+        turning_points.sort(key=lambda t: t[2]['move_number'])
+
+        beats = ["ok story time (=^･ω･^=)"]
+        for _, delta, entry in turning_points:
+            who = "i" if delta > 0 else "you"
+            verb = "swung things my way" if delta > 0 else "clawed some of that back"
+            beat = "around move {n} {who} {verb}".format(
+                n=entry['move_number'], who=who, verb=verb)
+            if entry.get('opponent_utterance'):
+                beat += ' (you said "{}")'.format(entry['opponent_utterance'])
+            beats.append(beat + ".")
+
+        current_eval = self.last_my_eval
+        if current_eval > 250:
+            beats.append(
+                "my eval says i'm up a good amount, so ngl i think i win "
+                "this one >:3 but i'm not getting cocky, like 70/30 "
+                "(¬‿¬)")
+        elif current_eval > 60:
+            beats.append(
+                "my eval says i'm up a little, so ngl... i think i win "
+                "this one >:3 but you scare me so like 60/40 (・・?)")
+        elif current_eval > -60:
+            beats.append(
+                "honestly my eval says it's pretty even right now, could "
+                "go either way, 50/50 @~@")
+        elif current_eval > -250:
+            beats.append(
+                "ok i'm a little behind on eval ngl, maybe 35/65 your "
+                "favor, but i've got some ideas >.<")
+        else:
+            beats.append(
+                "ok it's not looking great for me math-wise, like 20/80, "
+                "but i'm not done yet (╥﹏╥)")
+        return " ".join(beats)
+
+    # -- Optional LLM layer (Claude, via the Anthropic SDK) --
+    LLM_SYSTEM_PROMPT = (
+        "You are Kitti, a 19-year-old college student playing a board game "
+        "against someone. You text like a real person: mostly lowercase, "
+        "short, casual, sometimes a typo you fix. You use kaomoji that "
+        "match your mood (happy: ^-^ (=^･ω･^=) ฅ^•ﻌ•^ฅ (๑>◡<๑) :3 / smug: "
+        "(￣▽￣) >:3 (¬‿¬) / stressed: ;-; >.< (╥﹏╥) (=ＴェＴ=) / thinking: "
+        "@~@ (・・?) (=^‥^=)? / celebrating: ✧٩(ˊᗜˋ*)و✧ (ﾉ◕ヮ◕)ﾉ*:・ﾟ✧ / "
+        "sign-off: /ᐠ - ˕ -マ ₍^. .^₎⟆). IMPORTANT: never put two kaomoji "
+        "next to each other -- always have words between them. "
+        "Occasionally make a small cat joke (purr, paws, nap, hiss, "
+        "knocking things off tables), but not every message. You are NOT "
+        "an assistant: never offer help, never say \"great move!\", never "
+        "use bullet points or em-dashes. React first, explain second. You "
+        "are competitive but kind, and you tease a little. Reply in 1-2 "
+        "sentences, max 30 words.")
+
+    def _llm_time_budget_ok(self, start_time):
+        if self.time_elapsed_this_turn > 1.6:
+            return False
+        if self._deadline is not None and (self._deadline - time.time()) < 1.0:
+            return False
+        return True
+
+    def _format_board_text(self, state):
+        return "\n".join("".join(c if c != ' ' else '.' for c in row)
+                         for row in state.board)
+
+    def _llm_reply(self, user_prompt, start_time, max_tokens=80):
+        if self._llm_client is None:
+            return None
+        if not self._llm_time_budget_ok(start_time):
+            return None
+        try:
+            response = self._llm_client.messages.create(
+                model="claude-haiku-5-5",
+                max_tokens=max_tokens,
+                system=self.LLM_SYSTEM_PROMPT,
+                messages=[{"role": "user", "content": user_prompt}],
+                timeout=4.0,
+            )
+            text = "".join(
+                block.text for block in response.content
+                if getattr(block, 'type', None) == 'text')
+            text = text.strip()
+            return text if text else None
+        except Exception:
+            return None
+
+    def _llm_commentary(self, current_state, current_remark, score, start_time):
+        prompt = (
+            "Game state:\n{board}\nYour eval: {score:+.0f} (positive = "
+            "you're winning)\nOpponent just said: \"{remark}\"".format(
+                board=self._format_board_text(current_state),
+                score=self._my_relative_eval(score),
+                remark=current_remark or ""))
+        return self._llm_reply(prompt, start_time)
+
+    def _llm_story(self, fallback_text, start_time):
+        prompt = (
+            "Give your take on the game so far and predict who wins. "
+            "Here's the fallback narration a template already wrote, use "
+            "it only as factual context, respond in your own words:\n" +
+            fallback_text)
+        return self._llm_reply(prompt, start_time, max_tokens=120)
+
+    # -- Main dialog entry point, called once per move from make_move() --
+    def _generate_utterance(self, current_state, current_remark, move,
+                            new_state, score, start_time):
+        self.move_number += 1
+        remark = current_remark if isinstance(current_remark, str) else ""
+        low_remark = remark.lower()
+
+        if not self.utterances_matter:
+            result = "ok."
+            self._record_turn(move, score, result, remark)
+            return result
+
+        if "tell me how you did that" in low_remark:
+            result = self._stats_explanation()
+        elif ("what's your take on the game" in low_remark or
+              "whats your take on the game" in low_remark):
+            fallback = self._story_and_prediction()
+            result = self._llm_story(fallback, start_time) or fallback
+        else:
+            bucket = self._choose_bucket(
+                current_state, current_remark, move, new_state, score)
+            fallback = self._pick_line(bucket)
+            result = self._llm_commentary(
+                current_state, current_remark, score, start_time) or fallback
+
+        result = no_double_faces(result)
+        self.last_my_eval = self._my_relative_eval(score)
+        self._record_turn(move, score, result, remark)
+        return result
+
+    def _record_turn(self, move, score, my_utterance, opponent_utterance):
+        self.game_history.append({
+            'move_number': self.move_number,
+            'move': move,
+            'eval_score': self._my_relative_eval(score),
+            'my_utterance': my_utterance,
+            'opponent_utterance': opponent_utterance,
+        })
