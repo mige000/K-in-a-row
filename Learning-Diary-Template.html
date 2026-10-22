@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>Learning Diary Entry Template — K-in-a-Row Assignment</title>
+<link rel="stylesheet" href="mystyle.css">
+</head>
+<body>
+<main>
+<center>
+<table cellpadding="7" width="700">
+
+  <tr><td><font size="+3" face="Helvetica">
+    Learning Diary Entry
+  </font></td></tr>
+
+  <tr><td><font size="+1" face="Helvetica">
+    Introduction to Artificial Intelligence
+  </font></td></tr>
+
+  <tr><td><hr></td></tr>
+
+  <tr><td><font face="Helvetica">
+    <p>
+      <b>Purpose:</b>
+      This document serves as both your <em>Learning Diary entry</em> and your
+      <em>written report</em> for the K-in-a-Row assignment.  Submit it as
+      <code>Learning-Diary-Entry.pdf</code> (print this page from your browser,
+      or export from Word/Google Docs) alongside your code.
+    </p>
+    <p>
+      Copy this template into your own file.  After each heading and its
+      instruction paragraph, write your response in a visually distinct way
+      (different font, color, or indentation).  Aim for honest, specific answers
+      rather than length.  Where a question asks you to trace through code or
+      show a calculation, actually do so — do not describe it in the abstract.
+    </p>
+    <p>
+      <b>Point values</b> (60 pts total for this document):
+      Secs 1+2: 3 &bull; Sec 3: 3 &bull; Sec 4: 14 &bull; Sec 5: 10 &bull;
+      Sec 6: 10 &bull; Sec 7: 4 &bull; Sec 8: 1 &bull; Sec 9: 4 &bull;
+      Sec 10: 1 &bull; Transcript (items 4.10–4.11): 10.
+      Suggested sub-weights appear in each section heading.
+    </p>
+    <p>
+      <b>Note on gen-AI use:</b>
+      This assignment permits gen-AI assistance.  The questions in Sections 4
+      and 5 are designed to require engagement with <em>your specific
+      submitted code and your specific game runs</em>.  They cannot be
+      answered by prompting an AI with the assignment description alone.
+    </p>
+  </font></td></tr>
+
+  <!-- ============================================================ -->
+  <tr><td><font face="Helvetica">
+  <hr>
+  <b>Basic Information</b>
+  <pre>
+Student name(s):     (Lastname, Firstname; Lastname2, Firstname2 if partnered)
+Student ID(s):
+Agent name:
+Game-type focus:     (e.g., Tic-Tac-Toe, Cassini, Five-in-a-Row)
+Submission date:
+  </pre>
+  <font color="blue">Fill in above.</font>
+  </font></td></tr>
+
+  <!-- ============================================================ -->
+  <tr><td><font face="Helvetica">
+  <hr>
+  <b>Section 1 &mdash; Goals</b> <i>(3 pts, with Section 2)</i>
+  <pre>
+Describe what you set out to build at the start of the assignment.
+What were your intentions for the agent's persona — its name, tone,
+character? What level of search capability (minimax depth, alpha-beta,
+optional extras) did you aim for? If you worked with a partner, briefly
+note how you divided the work.
+  </pre>
+  <font color="blue">Write your response here.</font>
+  </font></td></tr>
+
+  <!-- ============================================================ -->
+  <tr><td><font face="Helvetica">
+  <hr>
+  <b>Section 2 &mdash; Agent Profile</b> <i>(3 pts, with Section 1)</i>
+  <pre>
+2a. Agent identity
+    Give the agent's name and a 2–3 line description of its persona:
+    tone, character, and any thematic inspiration (fictional character,
+    historical figure, invented archetype, etc.).
+
+2b. Twin
+    How does the twin instance (OurAgent(twin=True)) differ from the
+    base agent? Describe at least one behavioral or persona difference,
+    and explain why you chose that particular variation.  (The twin's
+    purpose is to enable self-play tests where both sides do not make
+    identical moves; even a small difference in opening preference or
+    persona name achieves this.)
+
+2c. Game-type coverage
+    Which game type(s) did you test your agent against most thoroughly,
+    and which did you test least?  Any known weaknesses on a particular
+    board size or k value?
+  </pre>
+  <font color="blue">Write your response here.</font>
+  </font></td></tr>
+
+  <!-- ============================================================ -->
+  <tr><td><font face="Helvetica">
+  <hr>
+  <b>Section 3 &mdash; Development &amp; Activities</b> <i>(3 pts)</i>
+  <pre>
+Describe the phases of your work on this assignment, in roughly
+chronological order.  Key areas to address:
+
+  - How did you approach writing the move generator and the minimax
+    skeleton before adding alpha-beta?
+  - What order did you tackle the main components in, and why?
+  - How did you develop the agent's dialog capability?  If you went
+    through an iterative design process (e.g., scripted rules first,
+    then LLM integration), describe each phase and what you learned
+    from it.  What worked?  What did you discard?
+  - What resources (lecture notes, readings, outside references)
+    were most useful?
+  </pre>
+  <font color="blue">Write your response here.</font>
+  </font></td></tr>
+
+  <!-- ============================================================ -->
+  <tr><td><font face="Helvetica">
+  <hr>
+  <b>Section 4 &mdash; Search Algorithm Analysis</b> <i>(14 pts: ~3 implementation, ~3 measurement, ~4 correctness explanation, ~4 hand-trace)</i>
+  <pre>
+This section asks you to explain and demonstrate your understanding of
+the search algorithms you implemented.  Answers must refer to your
+specific code and your specific test results — generic descriptions
+of how minimax works in textbooks are not sufficient.
+
+4a. Implementation overview
+    In which function(s) do alpha-beta cutoffs get detected in your
+    code?  Briefly describe the data flow: how does a cutoff in a
+    deep recursive call propagate back to stop exploration of siblings?
+
+4b. Effectiveness measurement
+    Run your agent on at least one game (or on the autograder test
+    state) with alpha-beta ON vs. OFF, at the same search depth
+    (depth 3 or more).  Report the number of static evaluations in
+    each case.  How many evaluations does alpha-beta save, and what
+    is the percentage reduction?
+
+4c. Conceptual question — correctness of pruning
+    Explain in your own words why alpha-beta pruning is *correct*:
+    that is, why can we safely prune a subtree without risking that
+    we miss the optimal move?  Your answer should be specific enough
+    that it could not have been written without understanding the
+    algorithm — for example, identify what invariant about alpha and
+    beta values makes the cutoff safe.
+
+4d. Minimax trace (do this by hand)
+    Using the autograder test state (reproduced below for convenience),
+    draw or describe the complete minimax tree to depth 2.  Label each
+    leaf with the value your static_eval (or the special evaluator)
+    assigns.  Show how the backed-up values propagate to the root,
+    and identify the move your agent selects.
+
+    Test state (it is O's turn):
+        O | O | X
+        X |   |
+          |   | X
+    Blank squares in row-major order: (1,1), (1,2), (2,0), (2,1).
+    Expected best move: (1,2).  Plain-minimax leaf count: 12.
+  </pre>
+  <font color="blue">Write your response here.  For 4d, you may include a hand-drawn
+scan, an ASCII diagram, or a clearly formatted text tree.</font>
+  </font></td></tr>
+
+  <!-- ============================================================ -->
+  <tr><td><font face="Helvetica">
+  <hr>
+  <b>Section 5 &mdash; Static Evaluation Analysis</b> <i>(10 pts: ~4 feature design, ~4 concrete example, ~2 limitations)</i>
+  <pre>
+5a. Feature design
+    What features does your static_eval function use to score a board?
+    (Examples: counts of X's and O's in rows/columns/diagonals,
+    weighted partial lines, winning-threat detection, forbidden-square
+    awareness.)  Explain the intuition behind the scoring formula.
+
+5b. Concrete example
+    Identify a specific board state that your agent actually encountered
+    during a test game (not a constructed example — use a state from a
+    real run).  Write out or sketch the board, state whose turn it is,
+    and report the numerical score your static_eval returned for it.
+    Then justify that score: why is it the right value for that
+    position given your scoring logic?
+
+5c. Limitations
+    Describe at least one type of board position where your static_eval
+    is likely to give a misleading score, and explain why.
+  </pre>
+  <font color="blue">Write your response here.</font>
+  </font></td></tr>
+
+  <!-- ============================================================ -->
+  <tr><td><font face="Helvetica">
+  <hr>
+  <b>Section 6 &mdash; Dialog &amp; Persona Design</b> <i>(10 pts: ~3 game-state relevance, ~3 opponent responsiveness, ~2 persona consistency, ~2 approach/tools)</i>
+  <pre>
+6a. Game-state relevance
+    What features, if any, does your agent use to make its utterances
+    relevant to the current board position or game trajectory?
+    (Examples: commenting on the number of pieces on the board,
+    recognizing a near-win situation, noting the opponent's last move.)
+    Explain how these features work at the code level.
+
+6b. Opponent responsiveness
+    What features, if any, does your agent use to respond to or
+    acknowledge the opponent's remarks?  Explain how they work.
+
+6c. Persona consistency
+    Give two or three example utterances that your agent might produce,
+    and explain what makes them "in character" for the persona you
+    designed.
+
+6d. Approach and tools
+    Describe the method you used to generate utterances: hand-coded
+    rules, an LLM API, search-instrumented commentary, or a
+    combination.  If you used an LLM, briefly describe your prompting
+    strategy and what persona/tone instructions you gave it.
+  </pre>
+  <font color="blue">Write your response here.</font>
+  </font></td></tr>
+
+  <!-- ============================================================ -->
+  <tr><td><font face="Helvetica">
+  <hr>
+  <b>Section 7 &mdash; Challenges &amp; Solutions</b> <i>(4 pts)</i>
+  <pre>
+Describe points of difficulty you encountered and how you resolved
+them (or where you remain stuck).  Include at least one concrete
+example of a bug: what the symptom was, what the root cause turned
+out to be, and what the fix was.  Examples of issues students
+commonly hit on this assignment:
+
+  - Off-by-one errors in depth-remaining logic
+  - Returning the original state instead of a deep copy
+  - Alpha-beta cutoff conditions inverted (pruning too aggressively
+    or not at all)
+  - static_eval returning 0 for all states in a particular game type
+  - prepare not returning 'OK', causing autograder failures
+  </pre>
+  <font color="blue">Write your response here.</font>
+  </font></td></tr>
+
+  <!-- ============================================================ -->
+  <tr><td><font face="Helvetica">
+  <hr>
+  <b>Section 8 &mdash; Reflections &amp; Learnings</b> <i>(1 pt)</i>
+  <pre>
+Articulate what you now understand more clearly as a result of doing
+this assignment.  Some prompts to consider:
+
+  - Did implementing minimax change how you think about game-tree
+    search?  Is there anything that surprised you about how it behaves?
+  - What is one connection you made between the material in this
+    assignment and something else from the course or from outside it?
+  - If you were to explain alpha-beta pruning to a classmate who
+    had not yet implemented it, what is the single most important
+    thing you would tell them?
+  </pre>
+  <font color="blue">Write your response here.</font>
+  </font></td></tr>
+
+  <!-- ============================================================ -->
+  <tr><td><font face="Helvetica">
+  <hr>
+  <b>Section 9 &mdash; Gen-AI Use &amp; Attribution</b> <i>(4 pts)</i>
+  <pre>
+9a. Tools used
+    List the AI tools you used on this assignment (e.g., Claude Code,
+    ChatGPT, GitHub Copilot, Gemini).  If you used none, say so.
+
+9b. Authorship map
+    For each major component below, indicate whether it was
+    (A) written entirely by you, (B) substantially AI-generated
+    and then reviewed/edited by you, or (C) AI-generated and
+    used largely as produced.  Add a brief note if the reality
+    is more nuanced than A/B/C.
+
+      - Move generator
+      - minimax skeleton (recursion structure, base cases)
+      - Alpha-beta cutoff logic
+      - static_eval function body
+      - Utterance generation
+      - prepare / introduce methods
+      - Any extra-credit components
+
+9c. What the AI got wrong
+    Describe at least one case where gen-AI produced code or an
+    explanation that was incorrect or misleading, and what you had
+    to do to recognize and fix it.  (If the AI was entirely correct
+    throughout, describe the closest call — a suggestion that
+    required the most careful scrutiny before you accepted it.)
+
+9d. One surprising insight from prompting
+    Describe one thing you learned or noticed about AI-assisted
+    coding that surprised you — about the AI's behavior, your own
+    process, or the assignment material itself.
+
+9e. Prompt log (For the Record)
+    Provide either the full prompting conversation for your
+    AI-assisted coding on this assignment (if not longer than 50K
+    bytes) or just your own prompts if the full conversation is
+    longer.  Do not include code or plan files written to your
+    file system by the agent.  If your prompts involve prompting
+    files (e.g., CLAUDE.md), include them if short (under 5K bytes
+    each); otherwise describe what they contain.
+    This section should not exceed 100K bytes in total.
+  </pre>
+  <font color="blue">Write your response here.</font>
+  </font></td></tr>
+
+  <!-- ============================================================ -->
+  <tr><td><font face="Helvetica">
+  <hr>
+  <b>Section 10 &mdash; Next Steps</b> <i>(1 pt)</i>
+  <pre>
+Identify remaining uncertainties or open questions about the
+material.  What would you explore or improve if you had more time?
+What would you do differently if you were starting this assignment
+over today?
+  </pre>
+  <font color="blue">Write your response here.</font>
+  </font></td></tr>
+
+  <!-- ============================================================ -->
+  <tr><td><font face="Helvetica">
+  <hr>
+  <b>Section 11 &mdash; Extra Credit (if applicable)</b> <i>(bonus pts — see spec)</i>
+  <pre>
+For each extra credit option you completed, include a separate
+subsection with:
+  - The option label (e.g., "Part I-A: Child ordering by static eval")
+  - A brief description of how you implemented it
+  - Measurement results (e.g., static evals saved at depth 4 with
+    vs. without ordering; Zobrist hit/miss rates; sample LLM-generated
+    utterances with prompts)
+  - What you learned from the implementation
+
+If you did not complete any extra credit options, omit this section.
+  </pre>
+  <font color="blue">Write your response here (or omit this section).</font>
+  </font></td></tr>
+
+  <tr><td><hr></td></tr>
+  <tr><td><font face="Helvetica" size="-1">
+    Learning Diary Entry &mdash; K-in-a-Row Assignment
+  </font></td></tr>
+
+</table>
+</center>
+</main>
+</body>
+</html>
