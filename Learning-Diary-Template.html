@@ -348,7 +348,114 @@ subsection with:
 
 If you did not complete any extra credit options, omit this section.
   </pre>
-  <font color="blue">Write your response here (or omit this section).</font>
+  <font color="blue">
+  <p><b>Part I-A: Child ordering by static evaluation</b></p>
+  <p>
+  In DEMO/COMPETITION modes, <code>_generate_moves_ordered</code> builds the
+  child state for every candidate move and sorts the candidates by
+  <code>static_eval</code> of that child before recursing: descending for
+  X (the maximizer, so the move most favorable to X is tried first) and
+  ascending for O. The intent is the classic alpha-beta result that
+  searching the best move first maximizes the chance that later siblings
+  can be cut off by the current alpha/beta bound.
+  </p>
+  <p>
+  <i>Measurement.</i> <code>extra_credit_benchmark.py</code> runs a fixed
+  4-ply alpha-beta search from the Cassini initial state (chosen because
+  its two handicap O's give the candidate-restricted move generator
+  something to work with from move 1) with and without this ordering:
+  </p>
+  <pre>
+              nodes visited   cutoffs (rate)     leaf evaluations
+  baseline         3730       3197  (85.7%)           30920
+  ordering         1097        984  (89.7%)            3309
+  </pre>
+  <p>
+  Ordering by static eval cut the number of search-tree nodes visited by
+  about 71% (3730 &rarr; 1097) and the number of true leaf evaluations by
+  about 89% (30920 &rarr; 3309), while the per-node cutoff rate also rose
+  slightly (85.7% &rarr; 89.7%). Both configurations picked the same move,
+  as expected since alpha-beta is exact regardless of ordering.
+  </p>
+  <p>
+  <i>What I learned.</i> The tree-size reduction was far larger than I
+  expected, but it did not translate into a faster wall-clock move in this
+  implementation: ordering requires computing <code>static_eval</code> for
+  every candidate at every internal node it visits (33018 extra "ordering"
+  evaluations here), and because <code>static_eval</code> scans every
+  k-length line on the board, that overhead is roughly as expensive as the
+  leaf evaluations it saves. The lesson is that move-ordering heuristics
+  need to be cheap relative to the thing they are trying to avoid
+  recomputing &mdash; a full static evaluator is a sound, pedagogically
+  clear choice (and is what the assignment asked for), but a production
+  engine would want a much cheaper ordering signal (e.g. a shallow
+  pattern/neighbor count) to actually convert the smaller tree into a
+  wall-clock win, or cache the static evals so they are not recomputed
+  on overlapping subtrees (see Part I-B).
+  </p>
+
+  <p><b>Part I-B: Zobrist hashing</b></p>
+  <p>
+  Zobrist hashing assigns one independent random 64-bit number to every
+  (square, piece) pair on the board (plus one for "it is X's turn" and one
+  for "it is O's turn"), computed once in <code>_init_zobrist</code> when
+  <code>prepare</code> learns the board size. A state's hash is the XOR of
+  the numbers for every occupied square plus the side-to-move number
+  (<code>_zobrist_hash</code>). XOR makes the hash order-independent and
+  cheap to verify, and two different move orders that reach the same board
+  (a transposition) hash identically, so a transposition table keyed by
+  this hash lets the search recognize "I have already solved this position
+  at this depth" and reuse the stored result instead of re-searching it.
+  </p>
+  <p>
+  Every table access goes through two small helpers,
+  <code>_tt_read</code>/<code>_tt_write</code>, which keep three counters:
+  writes (every time a node's backed-up value is stored), read attempts
+  (every lookup, hit or miss), and successful attempts/hits (lookups that
+  found a previously stored entry). Those three numbers are returned in
+  the AUTOGRADER-mode stats dict as <code>zobrist_table_num_entries_this_turn</code>,
+  <code>zobrist_table_num_reads_this_turn</code>, and
+  <code>zobrist_table_num_hits_this_turn</code>. A hit is only used to
+  short-circuit the search directly when not using alpha-beta pruning and
+  the cached depth is at least the depth remaining (otherwise the cached
+  value could be a pruned bound rather than the exact backed-up value, and
+  reusing it could be unsound); as the extra-credit option notes, cached
+  values are also used to help order children (Part I-A) &mdash; a child
+  whose value is already in the table is scored from the cache instead of
+  calling <code>static_eval</code> again.
+  </p>
+  <p>
+  <i>Measurement.</i> Same 4-ply Cassini benchmark, with Zobrist hashing
+  turned on:
+  </p>
+  <pre>
+              tt writes   tt read attempts   tt hits (successful)
+  zobrist        3730           3730               810
+  both           1097          34115               383
+  </pre>
+  <p>
+  With plain minimax node ordering ("zobrist" row, no I-A ordering), every
+  node is visited exactly once per the usual tree shape, so writes equal
+  read attempts (3730 each) and about 22% of reads (810/3730) found a
+  transposition from elsewhere in the same search. Combined with I-A
+  ordering ("both" row), far fewer nodes are backed up and written
+  (1097), but <code>_ordering_eval</code> adds a read attempt for every
+  candidate at every node it visits (34115 reads total), of which 383 were
+  reused instead of calling <code>static_eval</code> again.
+  </p>
+  <p>
+  <i>What I learned.</i> Transpositions are genuinely common in this game
+  even over a short 4-ply search (hundreds of hits), which matches the
+  intuition that K-in-a-Row has many move orders reaching the same board.
+  However, because my transposition table is only safe to use for a direct
+  cutoff in the no-pruning case, most of its value here came from the
+  ordering use case rather than the raw node-skipping use case &mdash; a
+  more sophisticated implementation would store alpha/beta bound flags
+  (exact/lower/upper) with each entry so cached values could also be used
+  safely to narrow the window under alpha-beta pruning, not just to order
+  children.
+  </p>
+  </font>
   </font></td></tr>
 
   <tr><td><hr></td></tr>

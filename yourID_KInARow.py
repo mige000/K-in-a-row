@@ -56,8 +56,12 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
         # Per-turn statistics (reset at the top of every make_move call).
         self.alpha_beta_cutoffs_this_turn = -1
         self.num_static_evals_this_turn = -1
-        self.zobrist_table_num_entries_this_turn = -1
-        self.zobrist_table_num_hits_this_turn = -1
+        self.num_leaf_evals_this_turn = -1        # static_eval calls at true search leaves
+        self.num_ordering_evals_this_turn = -1     # static_eval calls spent only on move ordering
+        self.num_nodes_visited_this_turn = -1      # every minimax() call, leaf or internal
+        self.zobrist_table_num_entries_this_turn = -1  # writes
+        self.zobrist_table_num_reads_this_turn = -1    # read attempts (hit or miss)
+        self.zobrist_table_num_hits_this_turn = -1     # successful reads
         self.zobrist_num_useful_hits_for_minimax = -1
         self.zobrist_num_useful_hits_for_ordering = -1
 
@@ -66,6 +70,7 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
         self._k = None
         self._eval_fn = None
         self._use_candidate_restriction = False
+        self._use_eval_ordering = False  # Extra credit I-A: order children by static eval.
         self._use_zobrist = False
         self._tt = None
         self._zobrist_table = None
@@ -133,13 +138,18 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
         self._eval_fn = (special_static_eval_fn if special_static_eval_fn is not None
                           else self._eval_wrapper)
         self._use_candidate_restriction = not autograder_mode
+        self._use_eval_ordering = not autograder_mode
         self._check_wins = not autograder_mode
         self._use_zobrist = bool(use_zobrist_hashing)
         self._tt = {} if self._use_zobrist else None
 
         self.alpha_beta_cutoffs_this_turn = 0
         self.num_static_evals_this_turn = 0
+        self.num_leaf_evals_this_turn = 0
+        self.num_ordering_evals_this_turn = 0
+        self.num_nodes_visited_this_turn = 0
         self.zobrist_table_num_entries_this_turn = 0 if self._use_zobrist else -1
+        self.zobrist_table_num_reads_this_turn = 0 if self._use_zobrist else -1
         self.zobrist_table_num_hits_this_turn = 0 if self._use_zobrist else -1
         self.zobrist_num_useful_hits_for_minimax = 0 if self._use_zobrist else -1
         self.zobrist_num_useful_hits_for_ordering = 0 if self._use_zobrist else -1
@@ -173,6 +183,7 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
                 'alpha_beta_cutoffs_this_turn': self.alpha_beta_cutoffs_this_turn,
                 'num_static_evals_this_turn': self.num_static_evals_this_turn,
                 'zobrist_table_num_entries_this_turn': self.zobrist_table_num_entries_this_turn,
+                'zobrist_table_num_reads_this_turn': self.zobrist_table_num_reads_this_turn,
                 'zobrist_table_num_hits_this_turn': self.zobrist_table_num_hits_this_turn,
                 'zobrist_num_useful_hits_for_minimax': self.zobrist_num_useful_hits_for_minimax,
                 'zobrist_num_useful_hits_for_ordering': self.zobrist_num_useful_hits_for_ordering,
@@ -235,6 +246,7 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
             beta=None):
 
         self._check_time()
+        self.num_nodes_visited_this_turn += 1
 
         if pruning:
             if alpha is None:
@@ -253,34 +265,28 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
 
         if depth_remaining <= 0:
             self.num_static_evals_this_turn += 1
+            self.num_leaf_evals_this_turn += 1
             return [self._eval_fn(state), None, state]
 
         tt_key = None
-        hint_move = None
         if self._use_zobrist:
             if self._tt is None:
                 self._tt = {}
             tt_key = self._zobrist_hash(state)
-            entry = self._tt.get(tt_key)
+            entry = self._tt_read(tt_key)
             if entry is not None:
                 e_depth, e_val, e_move, e_state = entry
-                self.zobrist_table_num_hits_this_turn += 1
-                hint_move = e_move
-                if e_depth >= depth_remaining:
-                    if not pruning:
-                        self.zobrist_num_useful_hits_for_minimax += 1
-                        return [e_val, e_move, e_state]
-                    else:
-                        self.zobrist_num_useful_hits_for_ordering += 1
-                else:
-                    self.zobrist_num_useful_hits_for_ordering += 1
+                if e_depth >= depth_remaining and not pruning:
+                    # Only reused directly in plain minimax: under pruning the
+                    # cached value may be a bound from a different alpha-beta
+                    # window, not the exact backed-up value, so it is unsafe
+                    # to short-circuit with it there (soundness over speed).
+                    self.zobrist_num_useful_hits_for_minimax += 1
+                    return [e_val, e_move, e_state]
 
         moves = self._generate_moves(state)
         if not moves:
             return [0.0, None, state]
-
-        if hint_move is not None:
-            moves = self._reorder_with_hint(moves, hint_move)
 
         is_max = (state.whose_move == 'X')
         best_val = float('-inf') if is_max else float('inf')
@@ -294,6 +300,7 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
                 child_val = (WIN_SCORE + depth_remaining) if is_max else -(WIN_SCORE + depth_remaining)
             elif depth_remaining - 1 == 0:
                 self.num_static_evals_this_turn += 1
+                self.num_leaf_evals_this_turn += 1
                 child_val = self._eval_fn(new_state)
             else:
                 child_val = self.minimax(
@@ -319,19 +326,9 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
                         break
 
         if self._use_zobrist and tt_key is not None:
-            if tt_key not in self._tt:
-                self.zobrist_table_num_entries_this_turn += 1
-            self._tt[tt_key] = (depth_remaining, best_val, best_move, best_state)
+            self._tt_write(tt_key, (depth_remaining, best_val, best_move, best_state))
 
         return [best_val, best_move, best_state]
-
-    def _reorder_with_hint(self, moves, hint_move):
-        for idx, (move, _) in enumerate(moves):
-            if move == hint_move:
-                if idx != 0:
-                    moves = [moves[idx]] + moves[:idx] + moves[idx + 1:]
-                break
-        return moves
 
     # ------------------------------------------------------------------
     # Move generation
@@ -380,42 +377,57 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
             return [(i, j) for i in range(n) for j in range(m) if board[i][j] == ' ']
         return list(near)
 
-    def _order_score(self, board, i, j, mover, opp, n, m, cn, cm):
-        score = 0.0
-        for di in range(-2, 3):
-            for dj in range(-2, 3):
-                if di == 0 and dj == 0:
-                    continue
-                ni, nj = i + di, j + dj
-                if 0 <= ni < n and 0 <= nj < m:
-                    c = board[ni][nj]
-                    if c == ' ' or c == '-':
-                        continue
-                    dist = max(abs(di), abs(dj))
-                    w = 1.0 / dist
-                    score += (2.0 * w) if c == mover else (1.5 * w)
-        score -= 0.05 * (abs(i - cn) + abs(j - cm))
-        return score
-
     def _generate_moves_ordered(self, state):
+        # Candidate-restricted move generation for DEMO/COMPETITION play.
+        # Restricting to squares near existing stones keeps branching low on
+        # large boards; sorting those candidates by static evaluation of the
+        # resulting child state (Extra Credit Part I-A) tries the moves most
+        # likely to cause an alpha-beta cutoff first.
         board = state.board
         n = len(board)
         m = len(board[0])
         mover = state.whose_move
-        opp = 'O' if mover == 'X' else 'X'
-        candidates = self._candidate_cells(board, n, m)
-        cn = (n - 1) / 2.0
-        cm = (m - 1) / 2.0
+        candidates = sorted(self._candidate_cells(board, n, m))
+        pairs = [((i, j), self._do_move(state, i, j)) for (i, j) in candidates]
+        if not self._use_eval_ordering:
+            return pairs  # "Default ordering": natural row-major order.
+
         scored = []
-        for (i, j) in candidates:
-            sc = self._order_score(board, i, j, mover, opp, n, m, cn, cm)
-            scored.append((sc, i, j))
-        scored.sort(key=lambda t: -t[0])
-        return [((i, j), self._do_move(state, i, j)) for (sc, i, j) in scored]
+        for move, child in pairs:
+            scored.append((self._ordering_eval(child), move, child))
+        reverse = (mover == 'X')  # X maximizes -> try best-for-X first.
+        scored.sort(key=lambda t: t[0], reverse=reverse)
+        return [(move, child) for (_, move, child) in scored]
+
+    def _ordering_eval(self, state):
+        '''A cheap value used only to sort children before searching them.
+        Extra Credit Part I-B: if a Zobrist entry for this child already
+        exists (e.g. from a transposition reached earlier in this search),
+        reuse it instead of recomputing static_eval.'''
+        if self._use_zobrist:
+            h = self._zobrist_hash(state)
+            entry = self._tt_read(h)
+            if entry is not None:
+                self.zobrist_num_useful_hits_for_ordering += 1
+                return entry[1]
+        self.num_static_evals_this_turn += 1
+        self.num_ordering_evals_this_turn += 1
+        return self._eval_fn(state)
 
     # ------------------------------------------------------------------
     # Zobrist hashing (optional transposition table)
     # ------------------------------------------------------------------
+    def _tt_read(self, key):
+        self.zobrist_table_num_reads_this_turn += 1
+        entry = self._tt.get(key)
+        if entry is not None:
+            self.zobrist_table_num_hits_this_turn += 1
+        return entry
+
+    def _tt_write(self, key, entry):
+        self.zobrist_table_num_entries_this_turn += 1
+        self._tt[key] = entry
+
     def _init_zobrist(self, n, m):
         rng = random.Random(0xC0FFEE)
         self._zobrist_table = [[(rng.getrandbits(64), rng.getrandbits(64))
