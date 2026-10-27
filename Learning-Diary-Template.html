@@ -63,11 +63,10 @@ Game-type focus:     (e.g., Tic-Tac-Toe, Cassini, Five-in-a-Row)
 Submission date:
   </pre>
   <font color="blue">
-  Student name(s): <i>TODO &mdash; fill in your own name(s)/partner(s).</i><br>
-  Student ID(s): <i>TODO &mdash; fill in; the first ID must match the filename
-  (e.g. jsmith99_KInARow.py). Remember to rename <code>yourID_KInARow.py</code>
-  before submitting.</i><br>
-  Agent name: Alpha Vector (twin instance: Covector)<br>
+  Student name(s): Tafjord, Reidun; Ge, Michelle<br>
+  Student ID(s): reidunt (matches <code>reidunt_KInARow.py</code>); <i>TODO
+  &mdash; fill in Michelle's student ID.</i><br>
+  Agent name: Kitti (twin instance: Bunni)<br>
   Game-type focus: Cassini (also tested on Tic-Tac-Toe and Five-in-a-Row;
   see Section 2c)<br>
   Submission date: <i>TODO &mdash; fill in the date you actually submit.</i>
@@ -140,21 +139,50 @@ note how you divided the work.
     board size or k value?
   </pre>
   <font color="blue">
-  <p><b>2a. Agent identity.</b> The agent is named <b>Alpha Vector</b>
-  (nickname "Vector"), a confident, terse strategist persona &mdash; it
-  narrates its moves in short declarative sentences ("I see the win from
-  here," "That line stops here"), a name chosen as a nod to the alpha/beta
-  values at the heart of its own search algorithm.</p>
+  <p><b>2a. Agent identity.</b> <i>(Updated after Part II; see Section 3 for
+  the history -- Part I originally shipped with a placeholder persona,
+  "Alpha Vector," while search/eval work was underway.)</i> The agent is
+  named <b>Kitti</b>: a 19-year-old CS sophomore who plays board games at
+  2am with a boba in hand &mdash; sweet, a little chaotic, secretly very
+  competitive, and dramatic when losing. The character is built around one
+  joke: she overthinks every move ("counting stuff in my head"), which is
+  exactly why she can recite precise alpha-beta statistics on request
+  without sounding like a generic engine dump (Section 6).</p>
   <p><b>2b. Twin.</b> The twin instance (<code>OurAgent(twin=True)</code>)
-  is named <b>Covector</b> and its <code>introduce()</code> text adds an
-  extra line identifying itself as the twin. <i>Honest limitation:</i> the
-  twin does not currently differ in search behavior or move preference (no
-  alternate opening bias, no different ordering) &mdash; it is
-  distinguished from the base agent by name/persona only, so in self-play
-  both sides play identically strong, deterministic search. A natural
-  improvement (see Section 10) would be to give the twin a slightly
-  different opening-move preference or evaluation weighting so that
-  self-play games are not perfectly symmetric.</p>
+  is named <b>Bunni</b> &mdash; Kitti's roommate, who plays the same games
+  but much more cautiously. Unlike the first diary pass (written before
+  Bunni existed), the twin is now genuinely distinct in three independent
+  ways, not just a different name:</p>
+  <ul>
+    <li><i>Voice:</i> Bunni's lines (<code>BUNNI_LINES</code>) use only
+    plain ASCII emoticons (<code>^w^</code>, <code>&gt;.&lt;</code>,
+    <code>T_T</code>) instead of Kitti's elaborate Unicode kaomoji, and
+    bunny vocabulary (hop, ears up, thump thump, binky, nibble) instead of
+    cat puns.</li>
+    <li><i>Strategy:</i> <code>static_eval</code> applies a
+    <code>defensive_bias</code> multiplier (1.8 for Bunni, 1.0/neutral for
+    Kitti) to whichever side is <i>not</i> the agent's own, so Bunni's
+    search genuinely values blocking the opponent's near-complete lines
+    more than building her own. On one identical test board (Tic-Tac-Toe,
+    O two away from a row with X one square from blocking) this alone
+    moved the same position's evaluation from -100.1 (Kitti) to -196.1
+    (Bunni) &mdash; the same board is a strictly scarier position in
+    Bunni's own evaluation than in Kitti's.</li>
+    <li><i>Dialog thresholds:</i> Bunni's bucket thresholds in
+    <code>_choose_bucket</code> are tighter (e.g. she calls "danger" at an
+    eval of -80 instead of -120, and needs +180 rather than +120 before
+    she'll call a position "winning"), so she reads as more jumpy/modest
+    in conversation on top of playing more defensively.</li>
+  </ul>
+  <p>
+  To confirm this is a real behavioral difference and not just flavor
+  text, I ran a full Kitti-vs-Bunni Cassini game and, at every turn,
+  separately asked whichever persona was NOT moving what it would have
+  played from that exact position. Out of 12 moves before the game ended,
+  the two personas' chosen moves disagreed on <b>5 of them</b> &mdash; a
+  concrete, measured confirmation that "the twin's moves are clearly
+  distinguishable from the main agent's," not merely that its text is.
+  </p>
   <p><b>2c. Game-type coverage.</b> Tic-Tac-Toe received the most testing:
   it is exercised directly by <code>autograder.py</code> (full game
   play-throughs as both X and O against <code>RandomPlayer</code>, static
@@ -868,10 +896,13 @@ over today?
     Section 11) &mdash; e.g. a shallow pattern/neighbor-count heuristic,
     or caching each child's <code>static_eval</code> result so it is not
     recomputed if that same child is reached again later in the search.</li>
-    <li>Give the twin agent (<code>OurAgent(twin=True)</code>) an actual
-    behavioral difference (opening preference or evaluation weighting), not
-    just a different name, so self-play games are not perfectly symmetric
-    (Section 2b).</li>
+    <li><s>Give the twin agent an actual behavioral difference, not just a
+    different name.</s> Done: Bunni now uses a <code>defensive_bias</code>
+    weighting in <code>static_eval</code> and tighter dialog thresholds
+    (Section 2b). Remaining idea in this direction: tune
+    <code>defensive_bias</code> itself by actually playing Bunni and Kitti
+    against each other repeatedly and seeing which bias value wins most
+    often, rather than the single hand-picked value (1.8) used now.</li>
     <li>Test more thoroughly against stronger opponents than
     <code>RandomPlayer</code> on Five-in-a-Row and Cassini specifically,
     and stress-test the candidate-restriction move generator against a

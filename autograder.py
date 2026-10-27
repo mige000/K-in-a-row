@@ -32,7 +32,7 @@ does not guarantee a full score on the official autograder.
 
 # ------------------------------------------------------------------
 # Change this to match YOUR agent file name (no .py extension):
-AGENT_FILE = 'yourID_KInARow'
+AGENT_FILE = 'reidunt_KInARow'
 # ------------------------------------------------------------------
 
 import importlib

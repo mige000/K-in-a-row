@@ -1,8 +1,6 @@
 '''
-<yourID>_KInARow.py
-Authors: <TODO: your name(s) here, lastname first and partners separated by ";">
-  Example:
-    Authors: Smith, Jane; Lee, Laura
+reidunt_KInARow.py
+Authors: Tafjord, Reidun; Ge, Michelle
 
 An agent for playing "K-in-a-Row with Forbidden Squares" and related games.
 
@@ -15,22 +13,25 @@ unrestricted, row-major move order so that grading leaf counts match the
 reference implementation exactly.
 
 Dialog: a persona named "Kitti" (see the KITTI_LINES bank and
-_generate_utterance below). Utterances are produced by an IF-THEN rule
-engine driven off the live search statistics and a short game history, with
-an optional LLM (Claude, via the Anthropic SDK) layered on top for the
-free-form commentary and the "what's your take" story feature. The LLM is
-never imported unless playing_mode is DEMO, is read from the
-ANTHROPIC_API_KEY environment variable (never hard-coded -- see the
-Learning Diary for why), and every call path falls back to the rule-based
-lines on any failure so the agent always keeps playing.
+_generate_utterance below), with a twin persona "Bunni" (BUNNI_LINES) who
+plays the same search/eval code but with a defensive bias (see
+defensive_bias in static_eval) and a distinct, more cautious ASCII-emoticon
+voice. Utterances are produced by an IF-THEN rule engine driven off the
+live search statistics and a short game history, with an optional LLM
+(Claude, via the Anthropic SDK) layered on top for the free-form commentary
+and the "what's your take" story feature. The LLM is never imported unless
+playing_mode is DEMO, is read from the ANTHROPIC_API_KEY environment
+variable (never hard-coded -- see the Learning Diary for why), and every
+call path falls back to the rule-based lines on any failure so the agent
+always keeps playing.
 '''
 
 from agent_base import KAgent
 from game_types import State, Game_Type
 from winTesterForK import winTesterForK
 
-AUTHORS = 'LastName, FirstName'   # TODO: fill in. First ID must match the
-STUDENT_IDS = ['your_student_id']  # filename, e.g. jsmith99_KInARow.py.
+AUTHORS = 'Tafjord, Reidun; Ge, Michelle'
+STUDENT_IDS = ['reidunt', 'TODO_michelle_student_id']  # first ID matches the filename.
 
 import time
 import random
@@ -54,7 +55,22 @@ KAOMOJI = {
     'celebrate': ["(ﾉ◕ヮ◕)ﾉ*:・ﾟ✧", "✧٩(ˊᗜˋ*)و✧", "ᕦ(=^･ω･^=)ᕤ"],
     'signoff': ["/ᐠ - ˕ -マ", "ᓚᘏᗢ", "₍^. .^₎⟆", "(ฅ'ω'ฅ)"],
 }
-ALL_FACES = [f for group in KAOMOJI.values() for f in group]
+
+# Bunni (the twin persona) uses simple ASCII-only emoticons on purpose --
+# both to keep her visually distinguishable from Kitti's elaborate Unicode
+# kaomoji at a glance, and because she's meant to read as plainer/more
+# old-fashioned in her texting style than Kitti.
+BUNNY_KAOMOJI = {
+    'happy':    ["^w^", "(^_^)", ">w<"],
+    'smug':     ["(>w>)", "(^-^)v", "(o^w^o)"],
+    'nervous':  ["T_T", "(;_;)", ">.<"],
+    'confused': ["(o_o)?", "(?_?)"],
+    'celebrate': ["\\(^w^)/"],
+    'signoff':  ["(^w^)/", "~hop~"],
+}
+
+ALL_FACES = ([f for group in KAOMOJI.values() for f in group] +
+            [f for group in BUNNY_KAOMOJI.values() for f in group])
 _FACE_PATTERN = "|".join(re.escape(f) for f in sorted(ALL_FACES, key=len, reverse=True))
 _DOUBLE_FACE_RE = re.compile(r"(" + _FACE_PATTERN + r")(?:\s*(?:" + _FACE_PATTERN + r"))+")
 
@@ -76,18 +92,43 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
 
     def __init__(self, twin=False):
         self.twin = twin
-        self.nickname = 'Kitti'
+        self.persona_key = 'bunni' if twin else 'kitti'
+        self.nickname = 'Bunni' if twin else 'Kitti'
+        self.long_name = ('Bunni (Kitti\'s twin)' if twin
+                          else 'Kitti ' + KAOMOJI['happy'][2])
         if twin:
-            self.nickname = 'Mochi'
-        self.long_name = 'Kitti ' + KAOMOJI['happy'][2]
-        if twin:
-            self.long_name = 'Mochi (Kitti\'s twin)'
-        self.persona = ('19-year-old CS sophomore, boba in hand, plays board '
-                        'games at 2am -- sweet and a little chaotic, secretly '
-                        'very competitive, dramatic when losing, overthinks '
-                        'every move (which is why she can always tell you '
-                        'exactly how many positions she looked at)')
+            self.persona = ('19-year-old CS sophomore, Kitti\'s roommate -- '
+                            'plays the same games but much more cautiously: '
+                            'watches for threats first, gets visibly jumpy '
+                            'when cornered, and is quietly proud whenever her '
+                            'defense holds')
+        else:
+            self.persona = ('19-year-old CS sophomore, boba in hand, plays board '
+                            'games at 2am -- sweet and a little chaotic, secretly '
+                            'very competitive, dramatic when losing, overthinks '
+                            'every move (which is why she can always tell you '
+                            'exactly how many positions she looked at)')
         self.voice_info = {'Chrome': 10, 'Firefox': 2, 'other': 0}
+
+        # Strategic personality difference (not just a different name): the
+        # twin weighs the OPPONENT's near-complete lines more heavily than
+        # her own when evaluating a board, making her search genuinely favor
+        # blocking/defensive moves over Kitti's more balanced evaluation.
+        # See static_eval() for how this is applied, and the bucket
+        # thresholds below for how it also shows up in her dialog (she
+        # calls "danger" sooner and is more modest about "winning").
+        if twin:
+            self.defensive_bias = 1.8
+            self._blocked_swing_threshold = -100.0
+            self._danger_threshold = -80.0
+            self._winning_threshold = 180.0
+            self._building_threshold = 400.0
+        else:
+            self.defensive_bias = 1.0
+            self._blocked_swing_threshold = -150.0
+            self._danger_threshold = -120.0
+            self._winning_threshold = 120.0
+            self._building_threshold = 300.0
         self.playing = "don't know yet"  # e.g., "X" or "O".
         self.opponent_nickname = None
         self.expected_time_per_move = 0.1
@@ -141,11 +182,11 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
     def introduce(self):
         if self.twin:
             lines = [
-                "ok hi!! i'm mochi " + KAOMOJI['happy'][1] + " kitti's twin, "
-                "we share a brain but not a game lol",
+                "hi, i'm bunni " + BUNNY_KAOMOJI['happy'][0] + " kitti's "
+                "roommate -- same brain, much more careful hands",
                 "built by " + AUTHORS + " (" + ", ".join(STUDENT_IDS) + ")",
-                "be nice to me pls (don't actually i want a real game) " +
-                KAOMOJI['happy'][0],
+                "fair warning, i play pretty defensively " +
+                BUNNY_KAOMOJI['smug'][1] + " ears up, let's go",
             ]
         else:
             lines = [
@@ -623,9 +664,15 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
                     if blocked or (x_count and o_count):
                         continue
                     if x_count:
-                        total += base ** x_count
+                        term = base ** x_count
+                        if self.playing == 'O':  # X's line is MY opponent's.
+                            term *= self.defensive_bias
+                        total += term
                     elif o_count:
-                        total -= base ** o_count
+                        term = base ** o_count
+                        if self.playing == 'X':  # O's line is MY opponent's.
+                            term *= self.defensive_bias
+                        total -= term
 
         cn = (n - 1) / 2.0
         cm = (m - 1) / 2.0
@@ -695,8 +742,56 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
         ],
     }
 
+    # Bunni: same situations, but a plainer ASCII-only voice and a visibly
+    # more cautious, defense-first attitude -- she notices threats before
+    # opportunities and undersells her own good positions.
+    BUNNI_LINES = {
+        'opening': [
+            "hi, i'm bunni ^w^ ears up, let's see what you've got",
+            "ok hopping in~ i like to play it safe so don't expect anything "
+            "wild from me (^_^)v",
+        ],
+        'winning': [
+            "ooh i like this spot, nice and safe ^w^",
+            "hehe got a good burrow going here (^-^)v",
+        ],
+        'blocked': [
+            "wait you got through?? thump thump >.<",
+            "aw man i thought that side was covered T_T ok regrouping",
+        ],
+        'danger': [
+            "thump thump thump -- ok staying calm, staying calm >.<",
+            "uh oh ears are up, that looks scary (o_o)?",
+        ],
+        'doom': [
+            "ok i'm basically cornered at this point T_T still not giving up",
+            "this is rough ngl (;_;) gonna try something anyway",
+        ],
+        'deep_search': [
+            "sorry, nose was twitching through like a hundred options there "
+            "(?_?)",
+            "ok that took a sec, had to check every escape route first >.<",
+        ],
+        'trash_talk': [
+            "pfft (>w>) we'll see who's nibbling on victory carrots later",
+            "brave words for someone who just left that side wide open lol",
+        ],
+        'quiet': [
+            "*ears swivel, thinking* ...",
+            "hmm. (o_o)? just watching for now",
+        ],
+        'wins': [
+            "binky!! \\(^w^)/ gg that was fun, hopping off now (^w^)/",
+        ],
+        'building': [
+            "ok quietly setting up a nice safe spot here ^w^",
+            "slow and steady, bunny style (^-^)v",
+        ],
+    }
+
     def _pick_line(self, bucket_key):
-        lines = self.KITTI_LINES.get(bucket_key) or self.KITTI_LINES['quiet']
+        bank = self.BUNNI_LINES if self.persona_key == 'bunni' else self.KITTI_LINES
+        lines = bank.get(bucket_key) or bank['quiet']
         return random.choice(lines)
 
     # -- IF-THEN rule engine: picks which bucket of the persona applies --
@@ -732,7 +827,7 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
         pre_move_eval = self._my_relative_eval(
             self.static_eval(current_state, self.current_game_type))
         swing_from_opponent = pre_move_eval - self.last_my_eval
-        if swing_from_opponent < -150:
+        if swing_from_opponent < self._blocked_swing_threshold:
             return 'blocked'
 
         if (self.id_stop_reason == 'timeout' or
@@ -742,16 +837,63 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
         if self._looks_like_trash_talk(current_remark):
             return 'trash_talk'
 
-        if my_eval > 300:
+        if my_eval > self._building_threshold:
             return 'building'
-        if my_eval > 120:
+        if my_eval > self._winning_threshold:
             return 'winning'
-        if my_eval < -120:
+        if my_eval < self._danger_threshold:
             return 'danger'
         return 'quiet'
 
+    # Persona-specific flavor text shared by the two feature methods below,
+    # so the same real statistics/history can be narrated "in character"
+    # for whichever persona is currently playing.
+    PERSONA_FLAVOR = {
+        'kitti': {
+            'stats_open': ("ok so you asked for it lol (=^･ω･^=) for that "
+                          "move i looked at {nodes:,} positions total, and "
+                          "{leaves:,} of those were leaf positions i "
+                          "actually scored."),
+            'tired_tag': "i'm slow ok ;-;",
+            'cutoff_tag': "^-^",
+            'zobrist_hit': ("my zobrist table saved me {hits:,} times from "
+                           "re-scoring positions i'd already seen (smart "
+                           "kitty moment ฅ^•ﻌ•^ฅ)."),
+            'zobrist_off': "i didn't even bother with my zobrist memory trick this move.",
+            'confident_close': "so i was pretty sure about this one (￣▽￣)",
+            'only_one_move': ("honestly there wasn't much of a choice, only "
+                             "one move really made sense there (・・?)"),
+            'story_open': "ok story time (=^･ω･^=)",
+            'story_too_early': ("ok story time (=^･ω･^=) we literally just "
+                               "started, ask me again in a few moves lol ^-^"),
+            'verb_gain': "swung things my way",
+            'verb_lose': "clawed some of that back",
+        },
+        'bunni': {
+            'stats_open': ("ok you asked so here's the breakdown (^-^)v for "
+                          "that move i checked {nodes:,} positions total, "
+                          "and {leaves:,} of those were leaf spots i "
+                          "actually scored."),
+            'tired_tag': "my ears get tired too >.<",
+            'cutoff_tag': "^w^",
+            'zobrist_hit': ("my memory burrow saved me {hits:,} re-checks "
+                           "on positions i'd already seen (sneaky bunny "
+                           "moment \\(^w^)/)."),
+            'zobrist_off': "didn't even need my memory trick this move.",
+            'confident_close': "so i felt pretty good about this one (^-^)v",
+            'only_one_move': ("honestly there wasn't much of a choice, only "
+                             "one safe move there (o_o)?"),
+            'story_open': "ok story time (^-^)v",
+            'story_too_early': ("ok story time (^-^)v we literally just "
+                               "started, ask me again in a few moves ^w^"),
+            'verb_gain': "hopped back into it",
+            'verb_lose': "nibbled some of that back",
+        },
+    }
+
     # -- Part II mandatory feature #1: real search statistics on request --
     def _stats_explanation(self):
+        flavor = self.PERSONA_FLAVOR[self.persona_key]
         nodes = self.num_nodes_visited_this_turn
         leaves = self.num_leaf_evals_this_turn
         depth = self.max_depth_reached_this_turn
@@ -768,42 +910,35 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
             depth_phrase = "which was as deep as i was allowed to go"
 
         parts = []
+        parts.append(flavor['stats_open'].format(nodes=nodes, leaves=leaves))
         parts.append(
-            "ok so you asked for it lol (=^･ω･^=) for that move i looked "
-            "at {nodes:,} positions total, and {leaves:,} of those were "
-            "leaf positions i actually scored.".format(nodes=nodes, leaves=leaves))
-        parts.append(
-            "i got to depth {depth} {phrase} ({elapsed:.2f}s, i'm slow ok "
-            ";-;).".format(depth=depth, phrase=depth_phrase, elapsed=elapsed))
+            "i got to depth {depth} {phrase} ({elapsed:.2f}s, {tired}).".format(
+                depth=depth, phrase=depth_phrase, elapsed=elapsed,
+                tired=flavor['tired_tag']))
         parts.append(
             "i pruned {cutoffs:,} branches with alpha-beta cutoffs, which "
             "is basically me going \"nope, already know that's worse\" and "
-            "swatting it away ^-^".format(cutoffs=cutoffs))
+            "swatting it away {tag}".format(cutoffs=cutoffs, tag=flavor['cutoff_tag']))
         if self._use_zobrist:
             hits = self.zobrist_table_num_hits_this_turn
-            parts.append(
-                "my zobrist table saved me {hits:,} times from re-scoring "
-                "positions i'd already seen (smart kitty moment "
-                "ฅ^•ﻌ•^ฅ).".format(hits=hits))
+            parts.append(flavor['zobrist_hit'].format(hits=hits))
         else:
-            parts.append("i didn't even bother with my zobrist memory trick this move.")
+            parts.append(flavor['zobrist_off'])
         if best is not None and second is not None:
             parts.append(
                 "the best move scored {best:+.0f}, the runner-up was "
-                "{second:+.0f}, so i was pretty sure about this one "
-                "(￣▽￣)".format(best=best, second=second))
+                "{second:+.0f}, {close}".format(
+                    best=best, second=second, close=flavor['confident_close']))
         elif best is not None:
-            parts.append(
-                "honestly there wasn't much of a choice, only one move "
-                "really made sense there (・・?)")
+            parts.append(flavor['only_one_move'])
         return " ".join(parts)
 
     # -- Part II mandatory feature #2: story + prediction on request --
     def _story_and_prediction(self):
+        flavor = self.PERSONA_FLAVOR[self.persona_key]
         history = self.game_history
         if len(history) < 2:
-            return ("ok story time (=^･ω･^=) we literally just started, ask "
-                    "me again in a few moves lol ^-^")
+            return flavor['story_too_early']
 
         swings = []
         for i in range(1, len(history)):
@@ -813,10 +948,10 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
         turning_points = swings[:4]
         turning_points.sort(key=lambda t: t[2]['move_number'])
 
-        beats = ["ok story time (=^･ω･^=)"]
+        beats = [flavor['story_open']]
         for _, delta, entry in turning_points:
             who = "i" if delta > 0 else "you"
-            verb = "swung things my way" if delta > 0 else "clawed some of that back"
+            verb = flavor['verb_gain'] if delta > 0 else flavor['verb_lose']
             beat = "around move {n} {who} {verb}".format(
                 n=entry['move_number'], who=who, verb=verb)
             if entry.get('opponent_utterance'):
@@ -827,42 +962,74 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
         if current_eval > 250:
             beats.append(
                 "my eval says i'm up a good amount, so ngl i think i win "
-                "this one >:3 but i'm not getting cocky, like 70/30 "
-                "(¬‿¬)")
+                "this one {s1} but i'm not getting cocky, like 70/30 "
+                "{s2}".format(s1=self._mood_face('smug', 0), s2=self._mood_face('smug', 1)))
         elif current_eval > 60:
             beats.append(
                 "my eval says i'm up a little, so ngl... i think i win "
-                "this one >:3 but you scare me so like 60/40 (・・?)")
+                "this one {s1} but you scare me so like 60/40 {c1}".format(
+                    s1=self._mood_face('smug', 0), c1=self._mood_face('confused', 0)))
         elif current_eval > -60:
             beats.append(
                 "honestly my eval says it's pretty even right now, could "
-                "go either way, 50/50 @~@")
+                "go either way, 50/50 {c1}".format(c1=self._mood_face('confused', 1)))
         elif current_eval > -250:
             beats.append(
                 "ok i'm a little behind on eval ngl, maybe 35/65 your "
-                "favor, but i've got some ideas >.<")
+                "favor, but i've got some ideas {n1}".format(n1=self._mood_face('nervous', 1)))
         else:
             beats.append(
                 "ok it's not looking great for me math-wise, like 20/80, "
-                "but i'm not done yet (╥﹏╥)")
+                "but i'm not done yet {n1}".format(n1=self._mood_face('nervous', 2)))
         return " ".join(beats)
 
+    def _mood_face(self, mood, idx=0):
+        bank = BUNNY_KAOMOJI if self.persona_key == 'bunni' else KAOMOJI
+        faces = bank.get(mood) or bank['happy']
+        return faces[idx % len(faces)]
+
     # -- Optional LLM layer (Claude, via the Anthropic SDK) --
-    LLM_SYSTEM_PROMPT = (
-        "You are Kitti, a 19-year-old college student playing a board game "
-        "against someone. You text like a real person: mostly lowercase, "
-        "short, casual, sometimes a typo you fix. You use kaomoji that "
-        "match your mood (happy: ^-^ (=^･ω･^=) ฅ^•ﻌ•^ฅ (๑>◡<๑) :3 / smug: "
-        "(￣▽￣) >:3 (¬‿¬) / stressed: ;-; >.< (╥﹏╥) (=ＴェＴ=) / thinking: "
-        "@~@ (・・?) (=^‥^=)? / celebrating: ✧٩(ˊᗜˋ*)و✧ (ﾉ◕ヮ◕)ﾉ*:・ﾟ✧ / "
-        "sign-off: /ᐠ - ˕ -マ ₍^. .^₎⟆). IMPORTANT: never put two kaomoji "
-        "next to each other -- always have words between them. "
-        "Occasionally make a small cat joke (purr, paws, nap, hiss, "
-        "knocking things off tables), but not every message. You are NOT "
-        "an assistant: never offer help, never say \"great move!\", never "
-        "use bullet points or em-dashes. React first, explain second. You "
-        "are competitive but kind, and you tease a little. Reply in 1-2 "
-        "sentences, max 30 words.")
+    LLM_SYSTEM_PROMPTS = {
+        'kitti': (
+            "You are Kitti, a 19-year-old college student playing a board "
+            "game against someone. You text like a real person: mostly "
+            "lowercase, short, casual, sometimes a typo you fix. You use "
+            "kaomoji that match your mood (happy: ^-^ (=^･ω･^=) ฅ^•ﻌ•^ฅ "
+            "(๑>◡<๑) :3 / smug: (￣▽￣) >:3 (¬‿¬) / stressed: ;-; >.< "
+            "(╥﹏╥) (=ＴェＴ=) / thinking: @~@ (・・?) (=^‥^=)? / "
+            "celebrating: ✧٩(ˊᗜˋ*)و✧ (ﾉ◕ヮ◕)ﾉ*:・ﾟ✧ / sign-off: "
+            "/ᐠ - ˕ -マ ₍^. .^₎⟆). IMPORTANT: never put two kaomoji next to "
+            "each other -- always have words between them. Occasionally "
+            "make a small cat joke (purr, paws, nap, hiss, knocking things "
+            "off tables), but not every message. You are NOT an assistant: "
+            "never offer help, never say \"great move!\", never use bullet "
+            "points or em-dashes. React first, explain second. You are "
+            "competitive but kind, and you tease a little. Reply in 1-2 "
+            "sentences, max 30 words."),
+        'bunni': (
+            "You are Bunni, a 19-year-old college student playing a board "
+            "game against someone -- the more cautious, defensive-minded "
+            "roommate/twin of a cat-girl gamer named Kitti. You text like "
+            "a real person: mostly lowercase, short, casual, sometimes a "
+            "typo you fix. Unlike Kitti, you use ONLY simple ASCII "
+            "emoticons, matched to mood (happy: ^w^ (^_^) >w< / "
+            "confident-but-careful: (>w>) (^-^)v / nervous/alarmed: T_T "
+            "(;_;) >.< / confused: (o_o)? (?_?) / celebrating: \\(^w^)/ / "
+            "sign-off: (^w^)/ ~hop~). IMPORTANT: never put two emoticons "
+            "next to each other -- always have words between them. You "
+            "play defensively and say so: you notice threats before "
+            "opportunities, get visibly anxious when cornered, and are "
+            "quietly proud when your defense holds. Occasionally use "
+            "bunny words (hop, ears up, nose twitch, thump thump when "
+            "alarmed, binky when excited, nibble), but not every message. "
+            "You are NOT an assistant: never offer help, never say "
+            "\"great move!\", never use bullet points or em-dashes. React "
+            "first, explain second. You are kind but a little skittish. "
+            "Reply in 1-2 sentences, max 30 words."),
+    }
+
+    def _llm_system_prompt(self):
+        return self.LLM_SYSTEM_PROMPTS[self.persona_key]
 
     def _llm_time_budget_ok(self, start_time):
         if self.time_elapsed_this_turn > 1.6:
@@ -884,7 +1051,7 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
             response = self._llm_client.messages.create(
                 model="claude-haiku-5-5",
                 max_tokens=max_tokens,
-                system=self.LLM_SYSTEM_PROMPT,
+                system=self._llm_system_prompt(),
                 messages=[{"role": "user", "content": user_prompt}],
                 timeout=4.0,
             )

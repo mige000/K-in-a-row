@@ -23,7 +23,7 @@ Run with:  python3 extra_credit_benchmark.py
 '''
 
 import time
-import yourID_KInARow as agent_module
+import reidunt_KInARow as agent_module
 import game_types
 from agent_base import KAgent
 
