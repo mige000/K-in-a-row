@@ -1,0 +1,4006 @@
+{
+ "format": "kiar-transcript/1",
+ "round": 1,
+ "game": {
+  "long_name": "Cassini (5 in a row that does not hit Saturn)",
+  "short_name": "Cassini",
+  "k": 5,
+  "n": 7,
+  "m": 8,
+  "turn_limit": 44,
+  "initial_board": [
+   [
+    " ",
+    " ",
+    " ",
+    " ",
+    " ",
+    " ",
+    " ",
+    " "
+   ],
+   [
+    " ",
+    "O",
+    " ",
+    " ",
+    " ",
+    " ",
+    " ",
+    " "
+   ],
+   [
+    " ",
+    " ",
+    " ",
+    "-",
+    "-",
+    " ",
+    " ",
+    " "
+   ],
+   [
+    " ",
+    " ",
+    "-",
+    "-",
+    "-",
+    "-",
+    " ",
+    " "
+   ],
+   [
+    " ",
+    " ",
+    " ",
+    "-",
+    "-",
+    " ",
+    " ",
+    " "
+   ],
+   [
+    " ",
+    " ",
+    " ",
+    " ",
+    " ",
+    " ",
+    " ",
+    " "
+   ],
+   [
+    " ",
+    " ",
+    " ",
+    " ",
+    " ",
+    " ",
+    "O",
+    " "
+   ]
+  ],
+  "first_move": "X"
+ },
+ "players": {
+  "X": {
+   "nickname": "Kitti",
+   "long_name": "Kitti \u0e05^\u2022\ufecc\u2022^\u0e05",
+   "persona": "19-year-old CS sophomore, boba in hand, plays board games at 2am -- sweet and a little chaotic, secretly very competitive, dramatic when losing, overthinks every move (which is why she can always tell you exactly how many positions she looked at)",
+   "voice_info": {
+    "Chrome": 10,
+    "Firefox": 2,
+    "other": 0
+   }
+  },
+  "O": {
+   "nickname": "Bunni",
+   "long_name": "Bunni (Kitti's twin)",
+   "persona": "19-year-old CS sophomore, Kitti's roommate -- plays the same games but much more cautiously: watches for threats first, gets visibly jumpy when cornered, and is quietly proud whenever her defense holds",
+   "voice_info": {
+    "Chrome": 10,
+    "Firefox": 2,
+    "other": 0
+   }
+  }
+ },
+ "events": [
+  {
+   "type": "intro",
+   "side": "X",
+   "nickname": "Kitti",
+   "text": "ok hi!! i'm kitti \u0e05^\u2022\ufecc\u2022^\u0e05 be nice to me pls (don't actually i want a real game) ^-^\nmade by Tafjord, Reidun; Ge, Michelle (reidunt, mige), they let me run my own search so don't blame them if i overthink\ni count literally everything in my head so if you ask nicely i'll tell you my stats after a move (\u00ac\u203f\u00ac)\n"
+  },
+  {
+   "type": "intro",
+   "side": "O",
+   "nickname": "Bunni",
+   "text": "hi, i'm bunni ^w^ kitti's roommate -- same brain, much more careful hands\nbuilt by Tafjord, Reidun; Ge, Michelle (reidunt, mige)\nfair warning, i play pretty defensively (^-^)v ears up, let's go\n"
+  },
+  {
+   "type": "gm",
+   "text": "We're playing Cassini (5 in a row that does not hit Saturn)."
+  },
+  {
+   "type": "gm",
+   "text": "Let's Play!"
+  },
+  {
+   "type": "move",
+   "side": "X",
+   "nickname": "Kitti",
+   "move": [
+    5,
+    4
+   ],
+   "utterance": "ok hi!! i'm kitti \u0e05^\u2022\ufecc\u2022^\u0e05 be nice to me pls (don't actually i want a real game) ^-^",
+   "board": [
+    [
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     "-",
+     "-",
+     "-",
+     "-",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     " ",
+     "X",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "O",
+   "stats": {
+    "seconds": 0.1763,
+    "alpha_beta_cutoffs_this_turn": 127,
+    "num_static_evals_this_turn": 5380
+   }
+  },
+  {
+   "type": "move",
+   "side": "O",
+   "nickname": "Bunni",
+   "move": [
+    3,
+    1
+   ],
+   "utterance": "ok hopping in~ i like to play it safe so don't expect anything wild from me (^_^)v",
+   "board": [
+    [
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     " ",
+     "X",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "X",
+   "stats": {
+    "seconds": 0.2457,
+    "alpha_beta_cutoffs_this_turn": 164,
+    "num_static_evals_this_turn": 8088
+   }
+  },
+  {
+   "type": "move",
+   "side": "X",
+   "nickname": "Kitti",
+   "move": [
+    5,
+    3
+   ],
+   "utterance": "wiat. wait* ok rude, i liked that line >.<",
+   "board": [
+    [
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "X",
+     "X",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "O",
+   "stats": {
+    "seconds": 0.1548,
+    "alpha_beta_cutoffs_this_turn": 87,
+    "num_static_evals_this_turn": 5183
+   }
+  },
+  {
+   "type": "move",
+   "side": "O",
+   "nickname": "Bunni",
+   "move": [
+    5,
+    6
+   ],
+   "utterance": "wait you got through?? thump thump >.<",
+   "board": [
+    [
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "X",
+   "stats": {
+    "seconds": 0.254,
+    "alpha_beta_cutoffs_this_turn": 174,
+    "num_static_evals_this_turn": 8195
+   }
+  },
+  {
+   "type": "move",
+   "side": "X",
+   "nickname": "Kitti",
+   "move": [
+    3,
+    6
+   ],
+   "utterance": "WAIT. how did you see that ;-; i was so proud of it (=\uff34\u30a7\uff34=)",
+   "board": [
+    [
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "O",
+   "stats": {
+    "seconds": 0.2527,
+    "alpha_beta_cutoffs_this_turn": 148,
+    "num_static_evals_this_turn": 8396
+   }
+  },
+  {
+   "type": "move",
+   "side": "O",
+   "nickname": "Bunni",
+   "move": [
+    6,
+    3
+   ],
+   "utterance": "aw man i thought that side was covered T_T ok regrouping",
+   "board": [
+    [
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     " ",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "X",
+   "stats": {
+    "seconds": 0.2939,
+    "alpha_beta_cutoffs_this_turn": 175,
+    "num_static_evals_this_turn": 9640
+   }
+  },
+  {
+   "type": "move",
+   "side": "X",
+   "nickname": "Kitti",
+   "move": [
+    6,
+    4
+   ],
+   "utterance": "WAIT. how did you see that ;-; i was so proud of it (=\uff34\u30a7\uff34=)",
+   "board": [
+    [
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "O",
+   "stats": {
+    "seconds": 0.2791,
+    "alpha_beta_cutoffs_this_turn": 156,
+    "num_static_evals_this_turn": 9055
+   }
+  },
+  {
+   "type": "move",
+   "side": "O",
+   "nickname": "Bunni",
+   "move": [
+    1,
+    3
+   ],
+   "utterance": "aw man i thought that side was covered T_T ok regrouping",
+   "board": [
+    [
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "O",
+     " ",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "X",
+   "stats": {
+    "seconds": 0.301,
+    "alpha_beta_cutoffs_this_turn": 196,
+    "num_static_evals_this_turn": 9814
+   }
+  },
+  {
+   "type": "move",
+   "side": "X",
+   "nickname": "Kitti",
+   "move": [
+    1,
+    4
+   ],
+   "utterance": "WAIT. how did you see that ;-; i was so proud of it (=\uff34\u30a7\uff34=)",
+   "board": [
+    [
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "O",
+     "X",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "O",
+   "stats": {
+    "seconds": 0.2415,
+    "alpha_beta_cutoffs_this_turn": 138,
+    "num_static_evals_this_turn": 7905
+   }
+  },
+  {
+   "type": "move",
+   "side": "O",
+   "nickname": "Bunni",
+   "move": [
+    0,
+    4
+   ],
+   "utterance": "aw man i thought that side was covered T_T ok regrouping",
+   "board": [
+    [
+     " ",
+     " ",
+     " ",
+     " ",
+     "O",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "O",
+     "X",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "X",
+   "stats": {
+    "seconds": 0.2901,
+    "alpha_beta_cutoffs_this_turn": 181,
+    "num_static_evals_this_turn": 9549
+   }
+  },
+  {
+   "type": "move",
+   "side": "X",
+   "nickname": "Kitti",
+   "move": [
+    0,
+    3
+   ],
+   "utterance": "WAIT. how did you see that ;-; i was so proud of it (=\uff34\u30a7\uff34=)",
+   "board": [
+    [
+     " ",
+     " ",
+     " ",
+     "X",
+     "O",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "O",
+     "X",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "O",
+   "stats": {
+    "seconds": 0.2837,
+    "alpha_beta_cutoffs_this_turn": 168,
+    "num_static_evals_this_turn": 8928
+   }
+  },
+  {
+   "type": "move",
+   "side": "O",
+   "nickname": "Bunni",
+   "move": [
+    2,
+    1
+   ],
+   "utterance": "aw man i thought that side was covered T_T ok regrouping",
+   "board": [
+    [
+     " ",
+     " ",
+     " ",
+     "X",
+     "O",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "O",
+     "X",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "X",
+   "stats": {
+    "seconds": 0.2165,
+    "alpha_beta_cutoffs_this_turn": 131,
+    "num_static_evals_this_turn": 6949
+   }
+  },
+  {
+   "type": "move",
+   "side": "X",
+   "nickname": "Kitti",
+   "move": [
+    5,
+    1
+   ],
+   "utterance": "WAIT. how did you see that ;-; i was so proud of it (=\uff34\u30a7\uff34=)",
+   "board": [
+    [
+     " ",
+     " ",
+     " ",
+     "X",
+     "O",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "O",
+     "X",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "X",
+     " ",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "O",
+   "stats": {
+    "seconds": 0.1989,
+    "alpha_beta_cutoffs_this_turn": 120,
+    "num_static_evals_this_turn": 6367
+   }
+  },
+  {
+   "type": "move",
+   "side": "O",
+   "nickname": "Bunni",
+   "move": [
+    4,
+    1
+   ],
+   "utterance": "wait you got through?? thump thump >.<",
+   "board": [
+    [
+     " ",
+     " ",
+     " ",
+     "X",
+     "O",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "O",
+     "X",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "X",
+     " ",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "X",
+   "stats": {
+    "seconds": 0.1964,
+    "alpha_beta_cutoffs_this_turn": 126,
+    "num_static_evals_this_turn": 6390
+   }
+  },
+  {
+   "type": "move",
+   "side": "X",
+   "nickname": "Kitti",
+   "move": [
+    0,
+    1
+   ],
+   "utterance": "WAIT. how did you see that ;-; i was so proud of it (=\uff34\u30a7\uff34=)",
+   "board": [
+    [
+     " ",
+     "X",
+     " ",
+     "X",
+     "O",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "O",
+     "X",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "X",
+     " ",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "O",
+   "stats": {
+    "seconds": 0.1431,
+    "alpha_beta_cutoffs_this_turn": 115,
+    "num_static_evals_this_turn": 3872
+   }
+  },
+  {
+   "type": "move",
+   "side": "O",
+   "nickname": "Bunni",
+   "move": [
+    5,
+    2
+   ],
+   "utterance": "aw man i thought that side was covered T_T ok regrouping",
+   "board": [
+    [
+     " ",
+     "X",
+     " ",
+     "X",
+     "O",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "O",
+     "X",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "X",
+   "stats": {
+    "seconds": 0.1755,
+    "alpha_beta_cutoffs_this_turn": 114,
+    "num_static_evals_this_turn": 5492
+   }
+  },
+  {
+   "type": "move",
+   "side": "X",
+   "nickname": "Kitti",
+   "move": [
+    4,
+    0
+   ],
+   "utterance": "WAIT. how did you see that ;-; i was so proud of it (=\uff34\u30a7\uff34=)",
+   "board": [
+    [
+     " ",
+     "X",
+     " ",
+     "X",
+     "O",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "O",
+     "X",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     " "
+    ],
+    [
+     "X",
+     "O",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "O",
+   "stats": {
+    "seconds": 0.2189,
+    "alpha_beta_cutoffs_this_turn": 133,
+    "num_static_evals_this_turn": 6994
+   }
+  },
+  {
+   "type": "move",
+   "side": "O",
+   "nickname": "Bunni",
+   "move": [
+    4,
+    7
+   ],
+   "utterance": "aw man i thought that side was covered T_T ok regrouping",
+   "board": [
+    [
+     " ",
+     "X",
+     " ",
+     "X",
+     "O",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "O",
+     "X",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     " "
+    ],
+    [
+     "X",
+     "O",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "X",
+   "stats": {
+    "seconds": 0.1292,
+    "alpha_beta_cutoffs_this_turn": 82,
+    "num_static_evals_this_turn": 4039
+   }
+  },
+  {
+   "type": "move",
+   "side": "X",
+   "nickname": "Kitti",
+   "move": [
+    2,
+    6
+   ],
+   "utterance": "wiat. wait* ok rude, i liked that line >.<",
+   "board": [
+    [
+     " ",
+     "X",
+     " ",
+     "X",
+     "O",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "O",
+     "X",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "-",
+     "-",
+     " ",
+     "X",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     " "
+    ],
+    [
+     "X",
+     "O",
+     " ",
+     "-",
+     "-",
+     " ",
+     " ",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "O",
+   "stats": {
+    "seconds": 0.1655,
+    "alpha_beta_cutoffs_this_turn": 117,
+    "num_static_evals_this_turn": 5168
+   }
+  },
+  {
+   "type": "move",
+   "side": "O",
+   "nickname": "Bunni",
+   "move": [
+    4,
+    6
+   ],
+   "utterance": "wait you got through?? thump thump >.<",
+   "board": [
+    [
+     " ",
+     "X",
+     " ",
+     "X",
+     "O",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "O",
+     "X",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "-",
+     "-",
+     " ",
+     "X",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     " "
+    ],
+    [
+     "X",
+     "O",
+     " ",
+     "-",
+     "-",
+     " ",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "X",
+   "stats": {
+    "seconds": 0.1988,
+    "alpha_beta_cutoffs_this_turn": 150,
+    "num_static_evals_this_turn": 6189
+   }
+  },
+  {
+   "type": "move",
+   "side": "X",
+   "nickname": "Kitti",
+   "move": [
+    3,
+    7
+   ],
+   "utterance": "wiat. wait* ok rude, i liked that line >.<",
+   "board": [
+    [
+     " ",
+     "X",
+     " ",
+     "X",
+     "O",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "O",
+     "X",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "-",
+     "-",
+     " ",
+     "X",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     " ",
+     "-",
+     "-",
+     " ",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "O",
+   "stats": {
+    "seconds": 0.2342,
+    "alpha_beta_cutoffs_this_turn": 188,
+    "num_static_evals_this_turn": 7282
+   }
+  },
+  {
+   "type": "move",
+   "side": "O",
+   "nickname": "Bunni",
+   "move": [
+    3,
+    0
+   ],
+   "utterance": "*ears swivel, thinking* ...",
+   "board": [
+    [
+     " ",
+     "X",
+     " ",
+     "X",
+     "O",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "O",
+     "X",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "-",
+     "-",
+     " ",
+     "X",
+     " "
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     " ",
+     "-",
+     "-",
+     " ",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "X",
+   "stats": {
+    "seconds": 0.0989,
+    "alpha_beta_cutoffs_this_turn": 71,
+    "num_static_evals_this_turn": 3050
+   }
+  },
+  {
+   "type": "move",
+   "side": "X",
+   "nickname": "Kitti",
+   "move": [
+    4,
+    2
+   ],
+   "utterance": "*sits here and stares at the board* (=^\u2025^=)",
+   "board": [
+    [
+     " ",
+     "X",
+     " ",
+     "X",
+     "O",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "O",
+     "X",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "-",
+     "-",
+     " ",
+     "X",
+     " "
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "-",
+     "-",
+     " ",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "O",
+   "stats": {
+    "seconds": 0.0968,
+    "alpha_beta_cutoffs_this_turn": 68,
+    "num_static_evals_this_turn": 2984
+   }
+  },
+  {
+   "type": "move",
+   "side": "O",
+   "nickname": "Bunni",
+   "move": [
+    2,
+    2
+   ],
+   "utterance": "*ears swivel, thinking* ...",
+   "board": [
+    [
+     " ",
+     "X",
+     " ",
+     "X",
+     "O",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "O",
+     "X",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "O",
+     "-",
+     "-",
+     " ",
+     "X",
+     " "
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "-",
+     "-",
+     " ",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "X",
+   "stats": {
+    "seconds": 0.0866,
+    "alpha_beta_cutoffs_this_turn": 64,
+    "num_static_evals_this_turn": 2597
+   }
+  },
+  {
+   "type": "move",
+   "side": "X",
+   "nickname": "Kitti",
+   "move": [
+    2,
+    5
+   ],
+   "utterance": "*sits here and stares at the board* (=^\u2025^=)",
+   "board": [
+    [
+     " ",
+     "X",
+     " ",
+     "X",
+     "O",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "O",
+     "X",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "O",
+     "-",
+     "-",
+     "X",
+     "X",
+     " "
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "-",
+     "-",
+     " ",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "O",
+   "stats": {
+    "seconds": 0.0781,
+    "alpha_beta_cutoffs_this_turn": 62,
+    "num_static_evals_this_turn": 2354
+   }
+  },
+  {
+   "type": "move",
+   "side": "O",
+   "nickname": "Bunni",
+   "move": [
+    4,
+    5
+   ],
+   "utterance": "*ears swivel, thinking* ...",
+   "board": [
+    [
+     " ",
+     "X",
+     " ",
+     "X",
+     "O",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     " ",
+     "O",
+     "X",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "O",
+     "-",
+     "-",
+     "X",
+     "X",
+     " "
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "-",
+     "-",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "X",
+   "stats": {
+    "seconds": 0.0708,
+    "alpha_beta_cutoffs_this_turn": 59,
+    "num_static_evals_this_turn": 2142
+   }
+  },
+  {
+   "type": "move",
+   "side": "X",
+   "nickname": "Kitti",
+   "move": [
+    1,
+    2
+   ],
+   "utterance": "*sits here and stares at the board* (=^\u2025^=)",
+   "board": [
+    [
+     " ",
+     "X",
+     " ",
+     "X",
+     "O",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "X",
+     "O",
+     "X",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "O",
+     "-",
+     "-",
+     "X",
+     "X",
+     " "
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "-",
+     "-",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "O",
+   "stats": {
+    "seconds": 0.0658,
+    "alpha_beta_cutoffs_this_turn": 56,
+    "num_static_evals_this_turn": 1940
+   }
+  },
+  {
+   "type": "move",
+   "side": "O",
+   "nickname": "Bunni",
+   "move": [
+    1,
+    5
+   ],
+   "utterance": "hmm. (o_o)? just watching for now",
+   "board": [
+    [
+     " ",
+     "X",
+     " ",
+     "X",
+     "O",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "X",
+     "O",
+     "X",
+     "O",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "O",
+     "-",
+     "-",
+     "X",
+     "X",
+     " "
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "-",
+     "-",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     " ",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "X",
+   "stats": {
+    "seconds": 0.06,
+    "alpha_beta_cutoffs_this_turn": 53,
+    "num_static_evals_this_turn": 1748
+   }
+  },
+  {
+   "type": "move",
+   "side": "X",
+   "nickname": "Kitti",
+   "move": [
+    5,
+    5
+   ],
+   "utterance": "ok so. hmm. thinking. (\u30fb\u30fb?)",
+   "board": [
+    [
+     " ",
+     "X",
+     " ",
+     "X",
+     "O",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "X",
+     "O",
+     "X",
+     "O",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "O",
+     "-",
+     "-",
+     "X",
+     "X",
+     " "
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "-",
+     "-",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     "X",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "O",
+   "stats": {
+    "seconds": 0.0535,
+    "alpha_beta_cutoffs_this_turn": 50,
+    "num_static_evals_this_turn": 1566
+   }
+  },
+  {
+   "type": "move",
+   "side": "O",
+   "nickname": "Bunni",
+   "move": [
+    0,
+    2
+   ],
+   "utterance": "hmm. (o_o)? just watching for now",
+   "board": [
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "O",
+     " ",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "X",
+     "O",
+     "X",
+     "O",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "O",
+     "-",
+     "-",
+     "X",
+     "X",
+     " "
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "-",
+     "-",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     "X",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "X",
+   "stats": {
+    "seconds": 0.0482,
+    "alpha_beta_cutoffs_this_turn": 47,
+    "num_static_evals_this_turn": 1394
+   }
+  },
+  {
+   "type": "move",
+   "side": "X",
+   "nickname": "Kitti",
+   "move": [
+    0,
+    5
+   ],
+   "utterance": "ok so. hmm. thinking. (\u30fb\u30fb?)",
+   "board": [
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "O",
+     "X",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "X",
+     "O",
+     "X",
+     "O",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "O",
+     "-",
+     "-",
+     "X",
+     "X",
+     " "
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "-",
+     "-",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     "X",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "O",
+   "stats": {
+    "seconds": 0.0422,
+    "alpha_beta_cutoffs_this_turn": 44,
+    "num_static_evals_this_turn": 1232
+   }
+  },
+  {
+   "type": "move",
+   "side": "O",
+   "nickname": "Bunni",
+   "move": [
+    1,
+    6
+   ],
+   "utterance": "*ears swivel, thinking* ...",
+   "board": [
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "O",
+     "X",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "X",
+     "O",
+     "X",
+     "O",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "O",
+     "-",
+     "-",
+     "X",
+     "X",
+     " "
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "-",
+     "-",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     "X",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "X",
+   "stats": {
+    "seconds": 0.0387,
+    "alpha_beta_cutoffs_this_turn": 41,
+    "num_static_evals_this_turn": 1080
+   }
+  },
+  {
+   "type": "move",
+   "side": "X",
+   "nickname": "Kitti",
+   "move": [
+    2,
+    0
+   ],
+   "utterance": "ok so. hmm. thinking. (\u30fb\u30fb?)",
+   "board": [
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "O",
+     "X",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "X",
+     "O",
+     "X",
+     "O",
+     "O",
+     " "
+    ],
+    [
+     "X",
+     "O",
+     "O",
+     "-",
+     "-",
+     "X",
+     "X",
+     " "
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "-",
+     "-",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     "X",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "O",
+   "stats": {
+    "seconds": 0.0337,
+    "alpha_beta_cutoffs_this_turn": 38,
+    "num_static_evals_this_turn": 938
+   }
+  },
+  {
+   "type": "move",
+   "side": "O",
+   "nickname": "Bunni",
+   "move": [
+    2,
+    7
+   ],
+   "utterance": "hmm. (o_o)? just watching for now",
+   "board": [
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "O",
+     "X",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "X",
+     "O",
+     "X",
+     "O",
+     "O",
+     " "
+    ],
+    [
+     "X",
+     "O",
+     "O",
+     "-",
+     "-",
+     "X",
+     "X",
+     "O"
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "-",
+     "-",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     "X",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     " ",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "X",
+   "stats": {
+    "seconds": 0.0291,
+    "alpha_beta_cutoffs_this_turn": 35,
+    "num_static_evals_this_turn": 806
+   }
+  },
+  {
+   "type": "move",
+   "side": "X",
+   "nickname": "Kitti",
+   "move": [
+    6,
+    2
+   ],
+   "utterance": "ok so. hmm. thinking. (\u30fb\u30fb?)",
+   "board": [
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "O",
+     "X",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "X",
+     "O",
+     "X",
+     "O",
+     "O",
+     " "
+    ],
+    [
+     "X",
+     "O",
+     "O",
+     "-",
+     "-",
+     "X",
+     "X",
+     "O"
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "-",
+     "-",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     "X",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     "X",
+     "O",
+     "X",
+     " ",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "O",
+   "stats": {
+    "seconds": 0.0256,
+    "alpha_beta_cutoffs_this_turn": 32,
+    "num_static_evals_this_turn": 684
+   }
+  },
+  {
+   "type": "move",
+   "side": "O",
+   "nickname": "Bunni",
+   "move": [
+    6,
+    5
+   ],
+   "utterance": "hmm. (o_o)? just watching for now",
+   "board": [
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "O",
+     "X",
+     " ",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "X",
+     "O",
+     "X",
+     "O",
+     "O",
+     " "
+    ],
+    [
+     "X",
+     "O",
+     "O",
+     "-",
+     "-",
+     "X",
+     "X",
+     "O"
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "-",
+     "-",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     "X",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     "X",
+     "O",
+     "X",
+     "O",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "X",
+   "stats": {
+    "seconds": 0.0218,
+    "alpha_beta_cutoffs_this_turn": 29,
+    "num_static_evals_this_turn": 572
+   }
+  },
+  {
+   "type": "move",
+   "side": "X",
+   "nickname": "Kitti",
+   "move": [
+    0,
+    6
+   ],
+   "utterance": "ok so. hmm. thinking. (\u30fb\u30fb?)",
+   "board": [
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "O",
+     "X",
+     "X",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "X",
+     "O",
+     "X",
+     "O",
+     "O",
+     " "
+    ],
+    [
+     "X",
+     "O",
+     "O",
+     "-",
+     "-",
+     "X",
+     "X",
+     "O"
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "-",
+     "-",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     "X",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     "X",
+     "O",
+     "X",
+     "O",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "O",
+   "stats": {
+    "seconds": 0.0181,
+    "alpha_beta_cutoffs_this_turn": 26,
+    "num_static_evals_this_turn": 470
+   }
+  },
+  {
+   "type": "move",
+   "side": "O",
+   "nickname": "Bunni",
+   "move": [
+    1,
+    7
+   ],
+   "utterance": "hmm. (o_o)? just watching for now",
+   "board": [
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "O",
+     "X",
+     "X",
+     " "
+    ],
+    [
+     " ",
+     "O",
+     "X",
+     "O",
+     "X",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     "X",
+     "O",
+     "O",
+     "-",
+     "-",
+     "X",
+     "X",
+     "O"
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "-",
+     "-",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     "X",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     "X",
+     "O",
+     "X",
+     "O",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "X",
+   "stats": {
+    "seconds": 0.0181,
+    "alpha_beta_cutoffs_this_turn": 28,
+    "num_static_evals_this_turn": 440
+   }
+  },
+  {
+   "type": "move",
+   "side": "X",
+   "nickname": "Kitti",
+   "move": [
+    1,
+    0
+   ],
+   "utterance": "ok so. hmm. thinking. (\u30fb\u30fb?)",
+   "board": [
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "O",
+     "X",
+     "X",
+     " "
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "O",
+     "X",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     "X",
+     "O",
+     "O",
+     "-",
+     "-",
+     "X",
+     "X",
+     "O"
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "-",
+     "-",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     "X",
+     "O",
+     " "
+    ],
+    [
+     " ",
+     " ",
+     "X",
+     "O",
+     "X",
+     "O",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "O",
+   "stats": {
+    "seconds": 0.0155,
+    "alpha_beta_cutoffs_this_turn": 24,
+    "num_static_evals_this_turn": 344
+   }
+  },
+  {
+   "type": "move",
+   "side": "O",
+   "nickname": "Bunni",
+   "move": [
+    5,
+    7
+   ],
+   "utterance": "*ears swivel, thinking* ...",
+   "board": [
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "O",
+     "X",
+     "X",
+     " "
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "O",
+     "X",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     "X",
+     "O",
+     "O",
+     "-",
+     "-",
+     "X",
+     "X",
+     "O"
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "-",
+     "-",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     "X",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     " ",
+     "X",
+     "O",
+     "X",
+     "O",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "X",
+   "stats": {
+    "seconds": 0.0112,
+    "alpha_beta_cutoffs_this_turn": 16,
+    "num_static_evals_this_turn": 238
+   }
+  },
+  {
+   "type": "move",
+   "side": "X",
+   "nickname": "Kitti",
+   "move": [
+    6,
+    1
+   ],
+   "utterance": "*sits here and stares at the board* (=^\u2025^=)",
+   "board": [
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "O",
+     "X",
+     "X",
+     " "
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "O",
+     "X",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     "X",
+     "O",
+     "O",
+     "-",
+     "-",
+     "X",
+     "X",
+     "O"
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "-",
+     "-",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "X",
+     "X",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "X",
+     "O",
+     "X",
+     "O",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "O",
+   "stats": {
+    "seconds": 0.0095,
+    "alpha_beta_cutoffs_this_turn": 16,
+    "num_static_evals_this_turn": 186
+   }
+  },
+  {
+   "type": "move",
+   "side": "O",
+   "nickname": "Bunni",
+   "move": [
+    5,
+    0
+   ],
+   "utterance": "hmm. (o_o)? just watching for now",
+   "board": [
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "O",
+     "X",
+     "X",
+     " "
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "O",
+     "X",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     "X",
+     "O",
+     "O",
+     "-",
+     "-",
+     "X",
+     "X",
+     "O"
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "-",
+     "-",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     "O",
+     "X",
+     "O",
+     "X",
+     "X",
+     "X",
+     "O",
+     "O"
+    ],
+    [
+     " ",
+     "X",
+     "X",
+     "O",
+     "X",
+     "O",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "X",
+   "stats": {
+    "seconds": 0.0063,
+    "alpha_beta_cutoffs_this_turn": 11,
+    "num_static_evals_this_turn": 110
+   }
+  },
+  {
+   "type": "move",
+   "side": "X",
+   "nickname": "Kitti",
+   "move": [
+    6,
+    0
+   ],
+   "utterance": "*sits here and stares at the board* (=^\u2025^=)",
+   "board": [
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "O",
+     "X",
+     "X",
+     " "
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "O",
+     "X",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     "X",
+     "O",
+     "O",
+     "-",
+     "-",
+     "X",
+     "X",
+     "O"
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "-",
+     "-",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     "O",
+     "X",
+     "O",
+     "X",
+     "X",
+     "X",
+     "O",
+     "O"
+    ],
+    [
+     "X",
+     "X",
+     "X",
+     "O",
+     "X",
+     "O",
+     "O",
+     " "
+    ]
+   ],
+   "whose_move": "O",
+   "stats": {
+    "seconds": 0.005,
+    "alpha_beta_cutoffs_this_turn": 9,
+    "num_static_evals_this_turn": 74
+   }
+  },
+  {
+   "type": "move",
+   "side": "O",
+   "nickname": "Bunni",
+   "move": [
+    6,
+    7
+   ],
+   "utterance": "*ears swivel, thinking* ...",
+   "board": [
+    [
+     " ",
+     "X",
+     "O",
+     "X",
+     "O",
+     "X",
+     "X",
+     " "
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "O",
+     "X",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     "X",
+     "O",
+     "O",
+     "-",
+     "-",
+     "X",
+     "X",
+     "O"
+    ],
+    [
+     "O",
+     "O",
+     "-",
+     "-",
+     "-",
+     "-",
+     "X",
+     "X"
+    ],
+    [
+     "X",
+     "O",
+     "X",
+     "-",
+     "-",
+     "O",
+     "O",
+     "O"
+    ],
+    [
+     "O",
+     "X",
+     "O",
+     "X",
+     "X",
+     "X",
+     "O",
+     "O"
+    ],
+    [
+     "X",
+     "X",
+     "X",
+     "O",
+     "X",
+     "O",
+     "O",
+     "O"
+    ]
+   ],
+   "whose_move": "X",
+   "stats": {
+    "seconds": 0.0031,
+    "alpha_beta_cutoffs_this_turn": 5,
+    "num_static_evals_this_turn": 36
+   }
+  },
+  {
+   "type": "result",
+   "text": "Game Over; it's a draw",
+   "winner": null
+  }
+ ]
+}

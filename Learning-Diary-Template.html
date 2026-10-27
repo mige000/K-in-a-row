@@ -121,20 +121,15 @@ note how you divided the work.
     board size or k value?
   </pre>
   <font color="blue">
-  <p><b>2a. Agent identity.</b> <i>(Updated after Part II; see Section 3 for
-  the history -- Part I originally shipped with a placeholder persona,
-  "Alpha Vector," while search/eval work was underway.)</i> The agent is
-  named <b>Kitti</b>: a 19-year-old CS sophomore who plays board games at
-  2am with a boba in hand &mdash; sweet, a little chaotic, secretly very
-  competitive, and dramatic when losing. The character is built around one
-  joke: she overthinks every move ("counting stuff in my head"), which is
-  exactly why she can recite precise alpha-beta statistics on request
-  without sounding like a generic engine dump (Section 6).</p>
-  <p><b>2b. Twin.</b> The twin instance (<code>OurAgent(twin=True)</code>)
-  is named <b>Bunni</b> &mdash; Kitti's roommate, who plays the same games
-  but much more cautiously. Unlike the first diary pass (written before
-  Bunni existed), the twin is now genuinely distinct in three independent
-  ways, not just a different name:</p>
+  <p><b>2a. Agent identity.</b> Our agents is named Kitti. She is a gamer
+  girl who loves a night in watching anime. She is chronically online and
+  spends most of her free time doomscrolling on TikTok. She is very sweet,
+  a little chaotic, and secretly very competitive. She also overthinks
+  every move, which is exactly why she can recite precise alpha-beta
+  statistics on request without sounding like a textbook.</p>
+  <p><b>2b. Twin.</b> The twin instance is named Bunni. She plays the same
+  games but much more cautiously. Bunni is distinct in three independent
+  ways:</p>
   <ul>
     <li><i>Voice:</i> Bunni's lines (<code>BUNNI_LINES</code>) use only
     plain ASCII emoticons (<code>^w^</code>, <code>&gt;.&lt;</code>,
@@ -143,13 +138,11 @@ note how you divided the work.
     cat puns.</li>
     <li><i>Strategy:</i> <code>static_eval</code> applies a
     <code>defensive_bias</code> multiplier (1.8 for Bunni, 1.0/neutral for
-    Kitti) to whichever side is <i>not</i> the agent's own, so Bunni's
-    search genuinely values blocking the opponent's near-complete lines
-    more than building her own. On one identical test board (Tic-Tac-Toe,
-    O two away from a row with X one square from blocking) this alone
-    moved the same position's evaluation from -100.1 (Kitti) to -196.1
-    (Bunni) &mdash; the same board is a strictly scarier position in
-    Bunni's own evaluation than in Kitti's.</li>
+    Kitti) to whichever side is not the agent's own, so Bunni's search
+    values blocking the opponent's near-complete lines more than building
+    her own. On one identical test board (Tic-Tac-Toe, O two away from a
+    row with X one square from blocking) this alone moved the same
+    position's evaluation from -100.1 (Kitti) to -196.1 (Bunni).</li>
     <li><i>Dialog thresholds:</i> Bunni's bucket thresholds in
     <code>_choose_bucket</code> are tighter (e.g. she calls "danger" at an
     eval of -80 instead of -120, and needs +180 rather than +120 before
@@ -157,16 +150,14 @@ note how you divided the work.
     in conversation on top of playing more defensively.</li>
   </ul>
   <p>
-  To confirm this is a real behavioral difference and not just flavor
-  text, I ran a full Kitti-vs-Bunni Cassini game and, at every turn,
-  separately asked whichever persona was NOT moving what it would have
-  played from that exact position. Out of 12 moves before the game ended,
-  the two personas' chosen moves disagreed on <b>5 of them</b> &mdash; a
-  concrete, measured confirmation that "the twin's moves are clearly
-  distinguishable from the main agent's," not merely that its text is.
+  We chose to make her more defensive since we thought that matched a
+  bunny's personality more, compared to a cat who is a lot less afraid. We
+  also chose to change how she talks since that matches her name more,
+  compared to acting like a cat. The dialog thresholds were used to convey
+  these changes through how she speaks.
   </p>
-  <p><b>2c. Game-type coverage.</b> Tic-Tac-Toe received the most testing:
-  it is exercised directly by <code>autograder.py</code> (full game
+  <p><b>2c. Game-type coverage.</b> We tested the most on Tic-Tac-Toe. It
+  is exercised directly by <code>autograder.py</code> (full game
   play-throughs as both X and O against <code>RandomPlayer</code>, static
   evaluation ordering, and the minimax/alpha-beta leaf-count tests) and by
   several ad hoc scripts run during development. Five-in-a-Row and Cassini
@@ -178,7 +169,7 @@ note how you divided the work.
   of adversarial testing as Tic-Tac-Toe. No concrete bugs were found on
   the larger boards, but the candidate-restriction move generator (which
   only considers squares within a radius of 2 of existing stones) is an
-  unverified risk specific to the larger board sizes: it has not been
+  unverified risk specific to the larger board sizes and it has not been
   stress-tested against a position where the objectively correct move is
   far from all current stones.</p>
   </font>

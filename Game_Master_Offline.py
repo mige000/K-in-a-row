@@ -217,14 +217,14 @@ def test():
     # Stand-alone test
     print("Starting stand-alone test of GameMaster.py")
     # Edit this to change what version of K-in-a-Row is used.
-    set_game(TTT) # default is Tic-Tac-Toe
+    #set_game(TTT) # default is Tic-Tac-Toe
     #set_game(FIAR) # Five in a Row
+    set_game(Cassini)
     # Import 1 or 2 agent files here.
     # If using only 1, create 2 instances of it, one of
     # which is a "twin".
 
-    #import yourID_KInARow as h
-    import RandomPlayer as h
+    import reidunt_KInARow as h
     px = h.OurAgent()
     po = h.OurAgent(twin=True)
     set_players(px, po)
