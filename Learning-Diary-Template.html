@@ -625,44 +625,56 @@ commonly hit on this assignment:
   </pre>
   <font color="blue">
   <p>
-  The concrete bug: early on, <code>minimax()</code> included a
-  "win-shortcut" &mdash; after generating a child state for a candidate
+  The biggest bug we ran into came from a "win-shortcut" we added to
+  <code>minimax()</code>. After generating the child state for a candidate
   move, it called <code>winTesterForK</code> on that child, and if the
-  move was an immediate win it returned an extreme score right away
-  instead of recursing further. This is good for real play (it stops the
-  search from wasting time looking past a forced win, and correctly values
-  it as a win rather than whatever finite number <code>static_eval</code>
-  happens to produce), so it was added before the autograder tests were
-  re-run.
+  move won right away it returned an extreme score immediately instead of
+  searching any deeper. This helps in real games because the search stops
+  wasting time past a forced win, and the win gets valued as an actual win
+  instead of whatever finite number <code>static_eval</code> would give
+  it. We added it before re-running the autograder tests, and that's when
+  the problem showed up.
   </p>
   <p>
-  <b>Symptom:</b> <code>autograder.py</code>'s T4 test (plain minimax, no
-  pruning, depth 2, using the special table-based evaluator) reported the
-  correct move but the wrong leaf count: 9 static evaluations instead of
-  the expected 12.
+  The symptom was in <code>autograder.py</code>'s T4 test, which runs
+  plain minimax with no pruning to depth 2 using the special table-based
+  evaluator. Our agent picked the correct move, but the leaf count was
+  wrong. It made 9 static evaluations when the expected number was 12.
   </p>
   <p>
-  <b>Root cause:</b> the test state
-  (<code>O,O,X / X,_,_ / _,_,X</code>) actually contains a real win inside
-  the 2-ply search tree &mdash; if O's first move leaves (1,2) open, X can
-  play (1,2) to complete column 2 (X at (0,2) and (2,2) already). The
-  win-shortcut correctly detected this and returned early, skipping the
-  evaluator call for that leaf &mdash; which is good for real play, but the
-  autograder's reference leaf count of 12 assumes the search is expanded
-  to the literal depth limit on every branch, with no early termination of
-  any kind (confirmed by the autograder's own hint text: "This count does
-  NOT depend on move ordering... call the special static evaluation
-  function at every leaf").
+  It took some digging to find the root cause. The test state
+  (<code>O,O,X / X,_,_ / _,_,X</code>) actually has a real win inside the
+  2-ply search tree. X already has (0,2) and (2,2), so if O's first move
+  leaves (1,2) open, X can play there and complete column 2. Our
+  win-shortcut correctly caught this and returned early, which meant it
+  skipped the evaluator call for that leaf. That's the right behavior for
+  real play, but the autograder's count of 12 assumes every branch gets
+  searched all the way to the depth limit with no early stopping. The
+  autograder's own hint text confirmed this, saying the count does not
+  depend on move ordering and that the special evaluation function should
+  be called at every leaf.
   </p>
   <p>
-  <b>Fix:</b> added a <code>self._check_wins</code> flag, set to
-  <code>True</code> in DEMO/COMPETITION modes and <code>False</code>
-  whenever <code>self.playing_mode == KAgent.AUTOGRADER</code>, and gated
-  the <code>winTesterForK</code> call in <code>minimax()</code> behind it.
-  After that change, T4 reported exactly 12 leaf evaluations and T5
-  (alpha-beta) reported exactly 8, both matching the reference, while the
-  win-shortcut optimization remained active (and still valuable) for
-  actual gameplay.
+  To fix it, we added a <code>self._check_wins</code> flag. It's set to
+  <code>True</code> in DEMO and COMPETITION modes and <code>False</code>
+  whenever <code>self.playing_mode == KAgent.AUTOGRADER</code>, and the
+  <code>winTesterForK</code> call in <code>minimax()</code> only runs when
+  the flag is on. After that change, T4 reported exactly 12 leaf
+  evaluations and T5 (alpha-beta) reported exactly 8, both matching the
+  expected values. The win-shortcut still runs during actual games, where
+  it's useful.
+  </p>
+  <p>
+  One problem we're still stuck on is the speed of the Gemini LLM we use
+  for Kitti's dialogue. It times out a lot, and even when it does respond
+  it can take a long time to return a line. For now, when the call times
+  out or fails, the agent falls back to the IF-THEN lines from
+  <code>_choose_bucket()</code> and <code>KITTI_LINES</code>, so Kitti
+  always has something to say and the game never stalls waiting on the
+  API. This keeps the agent working, but it means a lot of turns end up
+  using the hand-written lines instead of generated ones, and we haven't
+  figured out how to make the LLM responses fast enough to use them
+  consistently.
   </p>
   </font>
   </font></td></tr>
