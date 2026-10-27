@@ -56,21 +56,12 @@
   <hr>
   <b>Basic Information</b>
   <pre>
-Student name(s):     (Lastname, Firstname; Lastname2, Firstname2 if partnered)
-Student ID(s):
-Agent name:
-Game-type focus:     (e.g., Tic-Tac-Toe, Cassini, Five-in-a-Row)
-Submission date:
+Student name(s): <font color="blue">Tafjord, Reidun; Ge, Michelle</font>
+Student ID(s): <font color="blue">2460054, 2438243</font>
+Agent name: <font color="blue">Kitti</font>
+Game-type focus: <font color="blue">(e.g., Tic-Tac-Toe, Cassini, Five-in-a-Row)</font>
+Submission date: <font color="blue">October 30, 2026</font>
   </pre>
-  <font color="blue">
-  Student name(s): Tafjord, Reidun; Ge, Michelle<br>
-  Student ID(s): reidunt (matches <code>reidunt_KInARow.py</code>); <i>TODO
-  &mdash; fill in Michelle's student ID.</i><br>
-  Agent name: Kitti (twin instance: Bunni)<br>
-  Game-type focus: Cassini (also tested on Tic-Tac-Toe and Five-in-a-Row;
-  see Section 2c)<br>
-  Submission date: <i>TODO &mdash; fill in the date you actually submit.</i>
-  </font>
   </font></td></tr>
 
   <!-- ============================================================ -->
@@ -86,32 +77,23 @@ note how you divided the work.
   </pre>
   <font color="blue">
   <p>
-  The goal was an agent that plays correctly and efficiently across all
-  three game types (Tic-Tac-Toe, Five-in-a-Row, Cassini) using a single,
-  generic implementation driven entirely by the <code>Game_Type</code>
-  object (board size, <code>k</code>, forbidden squares) rather than any
-  game-specific special-casing. Concretely the targets were:
+  Our goal was to create an agent that plays K-in-a-row games with Forbidden Squares correctly and efficiently using a single,
+  generic implementation rather than any game-specific complicated logic. 
+  Our intentions with the agent's persona was to have a slightly ditzy, 
+  chronically online gamer-girl who overthinks her moves. We named her Kitti since our original idea was to incorporate a cat character. 
+  We wanted her persona to be cute by using ASCII emoticons 
+  to replicate the faces that people online use. 
   </p>
-  <ul>
-    <li>A correct minimax search with alpha-beta pruning that matches the
-    course autograder's reference leaf counts exactly (12 for plain
-    minimax, 8 with pruning, on the provided test state).</li>
-    <li>Iterative deepening so the agent uses whatever time budget it is
-    given rather than committing to a single fixed depth, with a safety
-    margin so it never forfeits on time.</li>
-    <li>A fast, line-window static evaluator, since this was emphasized as
-    the main place to differentiate agent strength.</li>
-    <li>A persona, communicated through dialog (see Section 6 for the full
-    design). Part I used a placeholder persona ("Alpha Vector," a terse
-    strategist voice) with simple deterministic lines just to satisfy the
-    non-empty-utterance requirement while search/eval work was underway;
-    once Part II started in earnest the persona was replaced end-to-end
-    with "Kitti," the actual intended character for this agent.</li>
-    <li>Both extra-credit options in Part I: static-eval child ordering and
-    Zobrist hashing (Section 11).</li>
-  </ul>
-  <p><i>TODO: if you worked with a partner, add a sentence here on how you
-  divided the work (e.g., search/eval vs. dialog/testing).</i></p>
+  <p>As for the search capability, we aimed for minimax search with alpha-beta pruning. We wanted iterative deepening
+  so the agent uses whatever time budget it is given rather than committing to a single fixed depth.
+  We also wanted a fast static evaluator since it was emphasized as the main way to differentiate our agent's strength.
+  We also wanted to implement the extra credit options so we added static evaluation of child ordering as well as Zobrist hashing.
+  </p>
+  <p>We worked in a partnership for this project. We sat together and thought of prompts together to generate useful code. We split the 
+    assignment up into smaller sections and reviewed the implementation of our respective sections for accuracy and completion. We then split 
+    up this learning diary by alternating the sections that we completed. While we split things up, we still worked together on each part and consulted
+    each other if we had any questions or concerns.
+  </p>
   </font>
   </font></td></tr>
 
