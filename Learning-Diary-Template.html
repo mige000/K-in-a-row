@@ -526,71 +526,81 @@ of how minimax works in textbooks are not sufficient.
     strategy and what persona/tone instructions you gave it.
   </pre>
   <font color="blue">
-  <p><b>6a. Game-state relevance.</b> <code>_choose_bucket()</code> in
-  <code>yourID_KInARow.py</code> is an IF-THEN rule engine that inspects
-  the live position and search result every turn: whether this is move 1
-  (opening line), whether the move just chosen is an immediate win
-  (checked via <code>winTesterForK</code>), whether the backed-up score
-  shows a forced loss, whether the opponent's last move caused a sharp
-  negative swing in my evaluation relative to my own last move (a cheap
-  extra <code>static_eval</code> call on the pre-move board, compared
-  against <code>self.last_my_eval</code>), how deep/slow the search ran
-  (<code>max_depth_reached_this_turn</code>,
-  <code>time_elapsed_this_turn</code>), and finally the plain magnitude of
-  the current evaluation (winning/building/danger/quiet bands). Each
-  condition maps to a named bucket of persona-appropriate lines.</p>
-  <p><b>6b. Opponent responsiveness.</b> Two mechanisms respond directly to
-  the opponent's own words (<code>current_remark</code>, passed into
-  <code>make_move</code> every turn): (1) a small keyword list
-  (<code>TRASH_TALK_KEYWORDS</code>) is checked against the opponent's
-  remark and triggers a playful clapback bucket if matched; (2) two exact
-  trigger phrases are special-cased ahead of everything else &mdash; "tell
-  me how you did that" returns a template filled with this turn's real
-  search counters, and "what's your take on the game so far" returns a
-  narrative built from <code>self.game_history</code>, the full
-  (move_number, move, eval_score, my_utterance, opponent_utterance) log
-  kept since <code>prepare()</code>, including direct quotes of what the
-  opponent actually said at the relevant turn.</p>
-  <p><b>6c. Persona consistency.</b> Three real outputs captured from
-  actual <code>make_move</code> calls during testing:</p>
+  <p><b>6a. Game-state relevance.</b> Our agent picks what to say using
+  <code>_choose_bucket()</code> in <code>reidunt_KInARow.py</code>, which
+  is a set of IF-THEN rules that look at the current board and the search
+  result every turn. It starts by checking whether it's move 1, and if so
+  it uses an opening line. Next it checks whether the move it just picked
+  wins right away (using <code>winTesterForK</code>) so Kitti can gloat,
+  or whether the backed-up minimax score says she's going to lose no
+  matter what, in which case she gets dramatic about it. To notice the
+  opponent's last move, it runs one extra <code>static_eval</code> on the
+  board from before our move and compares that to
+  <code>self.last_my_eval</code>, the score after our previous move. A big
+  drop means the opponent's move hurt us, and Kitti reacts to it. It also
+  looks at how hard the search worked
+  (<code>max_depth_reached_this_turn</code> and
+  <code>time_elapsed_this_turn</code>), and if the search went deep or
+  took a while it uses a "thought really hard about that" line. If none of
+  those apply, it looks at how big the current eval is and puts the
+  position into a winning, building, danger, or quiet band. Each of these
+  conditions maps to a named bucket of lines written for the persona, and
+  the agent picks one line from whichever bucket matches.</p>
+  <p><b>6b. Opponent responsiveness.</b> The opponent's remark comes into
+  <code>make_move</code> as <code>current_remark</code> every turn, and
+  our agent responds to it in two ways. First, we keep a small keyword
+  list called <code>TRASH_TALK_KEYWORDS</code>. If the opponent's remark
+  contains one of those words, Kitti answers from a playful clapback
+  bucket instead of her usual lines. Second, two exact phrases get checked
+  before anything else. "Tell me how you did that" returns a template
+  filled in with the real search stats from that turn. "What's your take
+  on the game so far" builds a summary from <code>self.game_history</code>,
+  a log we keep from <code>prepare()</code> on that stores the move
+  number, move, eval score, my utterance, and the opponent's utterance for
+  every turn. Because the log includes what the opponent said, Kitti can
+  quote their actual words from key moments in the game.</p>
+  <p><b>6c. Persona consistency.</b> Kitti is a cat girl who overthinks
+  every move and is a little smug about it. Here are three lines she
+  actually said when I tested <code>make_move</code>. Her opening line was
+  "mkay here we go, i promise i'm only a little scary (=^･ω･^=)". When the
+  opponent trash talked, she answered "ok (=ↀωↀ=) we'll see who's laughing
+  in like 4 moves". When asked "tell me how you did that," she says
+  something like:</p>
   <pre>
-  (opening)      "mkay here we go, i promise i'm only a little scary (=^･ω･^=)"
-  (trash talk)   "ok (=ↀωↀ=) we'll see who's laughing in like 4 moves"
-  ("tell me how you did that")
-    "ok so you asked for it lol (=^･ω･^=) for that move i looked at 288
-     positions total, and 150 of those were leaf positions i actually
-     scored. i got to depth 6 which was as deep as i was allowed to go
-     (0.01s, i'm slow ok ;-;). i pruned 211 branches with alpha-beta
-     cutoffs, which is basically me going "nope, already know that's
-     worse" and swatting it away ^-^ i didn't even bother with my zobrist
-     memory trick this move. the best move scored +0, the runner-up was
-     +0, so i was pretty sure about this one (￣▽￣)"
+  "ok so you asked for it lol (=^･ω･^=) for that move i looked at 288
+   positions total, and 150 of those were leaf positions i actually
+   scored. i got to depth 6 which was as deep as i was allowed to go
+   (0.01s, i'm slow ok ;-;). i pruned 211 branches with alpha-beta
+   cutoffs, which is basically me going "nope, already know that's
+   worse" and swatting it away ^-^ i didn't even bother with my zobrist
+   memory trick this move. the best move scored +0, the runner-up was
+   +0, so i was pretty sure about this one (￣▽￣)"
   </pre>
   <p>
-  These stay in character because they are mostly lowercase and casual,
-  react before explaining ("ok so you asked for it lol" before any
-  numbers), use at most one kaomoji in a row (enforced in code by
-  <code>no_double_faces()</code>, not just by writing them that way), and
-  &mdash; crucially for this persona &mdash; the dense, precise statistics
-  in the third example land as "the overthinking girl bragging about
-  exactly how much she overthought," which is the whole joke the persona
-  is built around, rather than sounding like a generic engine dump.
+  These sound like Kitti because they're mostly lowercase and casual, and
+  she reacts before she explains anything, like starting with "ok so you
+  asked for it lol" before getting into any numbers. She also uses
+  kaomoji's whenever she talks, which reflect the mood she is currently
+  in. This gives her a playful and distinct type of dialog.
   </p>
-  <p><b>6d. Approach and tools.</b> A combination of all three qualifying
-  approaches from the assignment: (b) hand-coded IF-THEN rules
-  (<code>_choose_bucket</code> plus the <code>KITTI_LINES</code> bank) are
-  always available and are the only thing used when no LLM client exists;
-  (c) search instrumentation (node/leaf/cutoff/Zobrist/best-vs-runner-up
-  counters, already built for Part I) is the literal content of the stats
-  feature and a trigger condition for the "deep search" bucket; and (a) an
-  LLM (Claude, via the <code>anthropic</code> Python SDK) can replace the
-  chosen bucket's line with a freshly generated one, given a system prompt
-  describing Kitti's voice rules (mostly lowercase, casual, kaomoji by
-  mood, never two in a row, no assistant-speak, tease a little, 1-2
-  sentences) plus the current board, my eval, and the opponent's last
-  remark as user content. See Section 11 for why the LLM key is read from
-  an environment variable rather than hard-coded, and how the no-API-key
-  fallback was verified.
+  <p><b>6d. Approach and tools.</b> I combined all three approaches from
+  the assignment. The base is hand-coded rules: <code>_choose_bucket()</code>
+  plus the <code>KITTI_LINES</code> bank. They always work, and they're
+  the only thing used when there's no LLM client. On top of that I used
+  search instrumentation. The node, leaf, cutoff, Zobrist, and
+  best-vs-runner-up counters I built for Part I supply the numbers in the
+  "tell me how you did that" answer, and they also decide when the "deep
+  search" bucket gets used. Finally, if an API key is set, Gemini (through
+  the <code>google-genai</code> Python SDK) can replace the chosen
+  bucket's line with a new one. My system prompt describes Kitti's voice:
+  mostly lowercase, casual, kaomoji that match her mood but never two in a
+  row, no assistant-style phrasing, tease the opponent a little, and keep
+  it to one or two sentences. The user message gives it the current board,
+  my eval, and the opponent's last remark, so the new line still fits what's
+  happening in the game. Section 11 explains why the API key comes from a
+  gitignored local file or an environment variable instead of being
+  hard-coded into the tracked file, and how I tested the fallback under a
+  missing SDK, a missing key, and the API's own real rate limits.
   </p>
   </font>
   </font></td></tr>
