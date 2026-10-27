@@ -13,9 +13,9 @@ class OurAgent(KAgent):
     def __init__(self, twin=False):
         self.twin = twin
         self.nickname = 'Randy'
-        if twin: self.nickname = "Randy-Junior"
+        if twin: self.nickname = "Bunni"
         self.long_name = 'Random Walker'
-        if twin: self.long_name = "Random Walker Junior"
+        if twin: self.long_name = "Bunni the Random Walker"
         self.my_past_utterances = None
         self.opponent_past_utterances = None
         self.repeat_count = None
@@ -53,7 +53,7 @@ class OurAgent(KAgent):
 
     def introduce(self):
         if self.twin:
-            remark = "Call me the Junior Random Walker."
+            remark = "Call me Bunni."
         else:
             remark = "My name is "+self.long_name+". Or is it Walky Rander?"
         return remark

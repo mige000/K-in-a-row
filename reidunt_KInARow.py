@@ -31,7 +31,7 @@ from game_types import State, Game_Type
 from winTesterForK import winTesterForK
 
 AUTHORS = 'Tafjord, Reidun; Ge, Michelle'
-STUDENT_IDS = ['reidunt', 'TODO_michelle_student_id']  # first ID matches the filename.
+STUDENT_IDS = ['reidunt', 'mige']
 
 import time
 import random
