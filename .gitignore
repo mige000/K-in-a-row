@@ -2,3 +2,7 @@
 __pycache__/
 *.pyc
 .DS_Store
+
+# Local-only Gemini API key for direct file handoffs. Never commit this --
+# see reidunt_KInARow.py's prepare() and the Learning Diary for why.
+gemini_key_local.py

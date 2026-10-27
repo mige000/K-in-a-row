@@ -18,11 +18,14 @@ plays the same search/eval code but with a defensive bias (see
 defensive_bias in static_eval) and a distinct, more cautious ASCII-emoticon
 voice. Utterances are produced by an IF-THEN rule engine driven off the
 live search statistics and a short game history, with an optional LLM
-(Claude, via the Anthropic SDK) layered on top for the free-form commentary
-and the "what's your take" story feature. The LLM is never imported unless
-playing_mode is DEMO, is read from the ANTHROPIC_API_KEY environment
-variable (never hard-coded -- see the Learning Diary for why), and every
-call path falls back to the rule-based lines on any failure so the agent
+(Gemini, via the google-genai SDK) layered on top for the free-form
+commentary and the "what's your take" story feature. The LLM is never
+imported unless playing_mode is DEMO, and the key is never written into
+this tracked file -- it's read from gemini_key_local.py (a file listed in
+.gitignore, so a real key can travel with a direct file handoff without
+ever being committed) or the GEMINI_API_KEY environment variable (see the
+Learning Diary for why). Every call path falls back to the rule-based
+lines on any failure so the agent
 always keeps playing.
 '''
 
@@ -37,6 +40,7 @@ import time
 import random
 import os
 import re
+import threading
 
 WIN_SCORE = 1.0e9
 
@@ -103,7 +107,7 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
                             'when cornered, and is quietly proud whenever her '
                             'defense holds')
         else:
-            self.persona = ('19-year-old CS sophomore, boba in hand, plays board '
+            self.persona = ('19-year-old CS sophomore, boba in hand, plays video '
                             'games at 2am -- sweet and a little chaotic, secretly '
                             'very competitive, dramatic when losing, overthinks '
                             'every move (which is why she can always tell you '
@@ -140,6 +144,7 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
         self.game_history = []   # list of dicts, see _record_turn()
         self.move_number = 0
         self.last_my_eval = 0.0  # my-perspective eval after my previous move
+        self._last_picked_line = None
         self.time_elapsed_this_turn = -1.0
         self.max_depth_reached_this_turn = -1
         self.id_stop_reason = None  # 'timeout' | 'max_ply' | 'forced_result'
@@ -221,19 +226,33 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
         self.move_number = 0
         self.last_my_eval = 0.0
 
-        # LLM setup (Claude via the Anthropic SDK). Only even attempted in
-        # DEMO mode with utterances turned on, per the assignment: never
+        # LLM setup (Gemini via the google-genai SDK). Only even attempted
+        # in DEMO mode with utterances turned on, per the assignment: never
         # import a Gen-AI API outside DEMO mode, and never let a missing
         # SDK/network/quota/key take the agent down -- every failure here
         # just leaves self._llm_client as None, and _generate_utterance()
         # always has a full non-LLM fallback for every situation.
+        #
+        # Key resolution order (first one found wins):
+        #   1. gemini_key_local.py -- a file listed in .gitignore, so it can
+        #      never end up in the public repo even by accident. If you
+        #      want to hand these files directly to someone (a grader, a
+        #      friend) and have the LLM "just work" with no setup on their
+        #      end, put your key in that file and send it ALONGSIDE this
+        #      one -- never push a copy of that file anywhere public.
+        #   2. the GEMINI_API_KEY environment variable (for anyone who'd
+        #      rather configure it that way, e.g. course staff).
         self._llm_client = None
         if self.playing_mode == KAgent.DEMO and utterances_matter:
             try:
-                api_key = os.environ.get('ANTHROPIC_API_KEY')
+                api_key = None
+                try:
+                    from gemini_key_local import GEMINI_API_KEY as api_key
+                except ImportError:
+                    api_key = os.environ.get('GEMINI_API_KEY')
                 if api_key:
-                    import anthropic  # not imported at module level on purpose
-                    self._llm_client = anthropic.Anthropic(api_key=api_key)
+                    from google import genai  # not imported at module level on purpose
+                    self._llm_client = genai.Client(api_key=api_key)
             except Exception:
                 self._llm_client = None
 
@@ -692,7 +711,7 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
     # ------------------------------------------------------------------
     # Hand-authored lines are the always-available fallback/base behavior
     # (IF-THEN rule engine below picks a bucket, then a line from it); the
-    # optional Claude call (see prepare()) can replace the chosen bucket's
+    # optional Gemini call (see prepare()) can replace the chosen bucket's
     # line with a freshly generated one that still respects the persona,
     # but every call path is allowed to fail silently back to these.
     KITTI_LINES = {
@@ -700,45 +719,66 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
             "ok hi!! i'm kitti ฅ^•ﻌ•^ฅ be nice to me pls (don't actually i "
             "want a real game) ^-^",
             "mkay here we go, i promise i'm only a little scary (=^･ω･^=)",
+            "hi hi ^-^ lemme just vibe into this opening real quick",
+            "ok new game who dis (=^･ω･^=) let's gooo",
         ],
         'winning': [
             "hehe (￣▽￣) i don't wanna say anything but... >:3",
             "ok i see a path here and it's a cute one for me (¬‿¬)",
+            "lowkey feeling myself rn (=ↀωↀ=)",
+            "ngl this is going exactly how i wanted >:3",
+            "hehe (¬‿¬) i'm just gonna keep doing this then",
         ],
         'blocked': [
             "WAIT. how did you see that ;-; i was so proud of it (=ＴェＴ=)",
             "wiat. wait* ok rude, i liked that line >.<",
+            "ok wow (=ＴェＴ=) didn't expect that, regrouping",
+            "excuse me?? how (╥﹏╥) ok fine, new plan",
         ],
         'danger': [
             "ok this is fine >.< this is totally fine /ᐠ｡ꞈ｡ᐟ\\",
             "hmm ok not great not great (╥﹏╥) thinking thinking",
+            "ok ok don't panic (ok panicking a little) ;-;",
+            "this is. a situation. (=ＴェＴ=) ok let me think",
+            "wait no ;-; ok i see what you did there",
         ],
         'doom': [
             "ok um (=ＴェＴ=) this is not the timeline i wanted but i'm still "
             "playing it out",
             "noooo ;-; ok i see it, i'm cooked, still swinging tho (╥﹏╥)",
+            "ok this is bad bad (=ＴェＴ=) but i refuse to just give up",
         ],
         'deep_search': [
             "sorry that took a sec @~@ i was chasing like 6 laser pointers "
             "in my head",
             "ok that one needed more counting than usual, lowkey my brain "
             "hurts @_@",
+            "hmm that took longer than usual, lotta branches to check @~@",
+            "ok sorry i was really in my head on that one (・・?)",
         ],
         'trash_talk': [
             "big words (¬‿¬) for someone with that left side lol hiss",
             "ok (=ↀωↀ=) we'll see who's laughing in like 4 moves",
+            "mhm sure (¬‿¬) say that again after this move",
+            "lol ok (=ↀωↀ=) noted, remembered, filed away",
         ],
         'quiet': [
             "*sits here and stares at the board* (=^‥^=)",
             "ok so. hmm. thinking. (・・?)",
+            "mm ok just vibing with the position rn (=^‥^=)",
+            "no notes yet, just looking around ^-^",
+            "hmm interesting board honestly (・・?)",
         ],
         'wins': [
             "GG!!! ✧٩(ˊᗜˋ*)و✧ purr-fect game, ok i'm gonna go nap now "
             "/ᐠ - ˕ -マ",
+            "yesss!! ✧٩(ˊᗜˋ*)و✧ gg, that was fun /ᐠ - ˕ -マ",
         ],
         'building': [
             "ngl that felt pawsitive ฅ^•ﻌ•^ฅ",
             "ok building something here, be scared (๑>◡<๑)",
+            "hehe stacking up some stuff over here ^-^",
+            "ok i have a little plan forming (¬‿¬)",
         ],
     }
 
@@ -750,49 +790,75 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
             "hi, i'm bunni ^w^ ears up, let's see what you've got",
             "ok hopping in~ i like to play it safe so don't expect anything "
             "wild from me (^_^)v",
+            "hii ^w^ i'm gonna play it slow and careful, fair warning",
+            "ok ears up, let's hop into this one (^_^)v",
         ],
         'winning': [
             "ooh i like this spot, nice and safe ^w^",
             "hehe got a good burrow going here (^-^)v",
+            "ok this feels secure, i like it ^w^",
+            "not bad, not bad (^-^)v slow and steady",
         ],
         'blocked': [
             "wait you got through?? thump thump >.<",
             "aw man i thought that side was covered T_T ok regrouping",
+            "oh no (;_;) ok that one got past me, rethinking",
+            "wait what how >.< ok that's annoying, new plan time",
         ],
         'danger': [
             "thump thump thump -- ok staying calm, staying calm >.<",
             "uh oh ears are up, that looks scary (o_o)?",
+            "ok ok don't panic >.< ...panicking a little T_T",
+            "hmm that's a lot of pressure (;_;) thinking fast",
         ],
         'doom': [
             "ok i'm basically cornered at this point T_T still not giving up",
             "this is rough ngl (;_;) gonna try something anyway",
+            "ok this is scary but i'm not folding yet >.<",
         ],
         'deep_search': [
             "sorry, nose was twitching through like a hundred options there "
             "(?_?)",
             "ok that took a sec, had to check every escape route first >.<",
+            "sorry that one took a while, lotta burrow exits to check (o_o)?",
+            "ok that was a lot of thinking, ears are tired now >.<",
         ],
         'trash_talk': [
             "pfft (>w>) we'll see who's nibbling on victory carrots later",
             "brave words for someone who just left that side wide open lol",
+            "mhm sure (>w>) we'll see about that",
         ],
         'quiet': [
             "*ears swivel, thinking* ...",
             "hmm. (o_o)? just watching for now",
+            "ok just scouting the board rn ^w^",
+            "no rush, just looking around (?_?)",
         ],
         'wins': [
             "binky!! \\(^w^)/ gg that was fun, hopping off now (^w^)/",
+            "yay!! \\(^w^)/ gg, that was close though",
         ],
         'building': [
             "ok quietly setting up a nice safe spot here ^w^",
             "slow and steady, bunny style (^-^)v",
+            "ok building something sturdy over here ^w^",
+            "little by little, that's how i like it (^-^)v",
         ],
     }
 
     def _pick_line(self, bucket_key):
         bank = self.BUNNI_LINES if self.persona_key == 'bunni' else self.KITTI_LINES
         lines = bank.get(bucket_key) or bank['quiet']
-        return random.choice(lines)
+        if len(lines) > 1:
+            # Avoid repeating the exact same line twice in a row, which a
+            # long game sitting in one bucket (e.g. "quiet") for many
+            # turns would otherwise make very noticeable.
+            choices = [l for l in lines if l != self._last_picked_line] or lines
+        else:
+            choices = lines
+        line = random.choice(choices)
+        self._last_picked_line = line
+        return line
 
     # -- IF-THEN rule engine: picks which bucket of the persona applies --
     def _my_relative_eval(self, raw_score):
@@ -988,7 +1054,7 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
         faces = bank.get(mood) or bank['happy']
         return faces[idx % len(faces)]
 
-    # -- Optional LLM layer (Claude, via the Anthropic SDK) --
+    # -- Optional LLM layer (Gemini, via the google-genai SDK) --
     LLM_SYSTEM_PROMPTS = {
         'kitti': (
             "You are Kitti, a 19-year-old college student playing a board "
@@ -1032,15 +1098,44 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
         return self.LLM_SYSTEM_PROMPTS[self.persona_key]
 
     def _llm_time_budget_ok(self, start_time):
-        if self.time_elapsed_this_turn > 1.6:
-            return False
-        if self._deadline is not None and (self._deadline - time.time()) < 1.0:
-            return False
-        return True
+        # Checked against true wall-clock time elapsed since make_move
+        # started, not against the search's own (often much tighter)
+        # self-imposed deadline -- by the time we reach this call the
+        # search has already finished using whatever budget IT needed.
+        # Combined with the LLM_CALL_TIMEOUT_SECONDS hard cap below, this
+        # keeps the worst case (search ate the whole 1s + a full LLM
+        # timeout) comfortably near DEMO's "no more than 3 sec" guidance.
+        return (time.time() - start_time) < 1.0
 
     def _format_board_text(self, state):
         return "\n".join("".join(c if c != ' ' else '.' for c in row)
                          for row in state.board)
+
+    LLM_CALL_TIMEOUT_SECONDS = 2.5
+
+    def _gemini_call(self, user_prompt, max_tokens):
+        from google.genai import types
+        response = self._llm_client.models.generate_content(
+            model="gemini-flash-latest",  # Google's rolling alias for its
+            # current fast/cheap model, so this doesn't go stale when
+            # specific dated model names get retired.
+            contents=user_prompt,
+            config=types.GenerateContentConfig(
+                system_instruction=self._llm_system_prompt(),
+                max_output_tokens=max_tokens,
+                # Current Flash models spend part of max_output_tokens on
+                # hidden "thinking" tokens before writing visible text; at
+                # our small token budgets that can eat the whole response
+                # and return empty text. We only need a one-line persona
+                # quip, not multi-step reasoning, so turn thinking off.
+                thinking_config=types.ThinkingConfig(thinking_budget=0),
+                # No explicit http_options timeout: the API rejects any
+                # value under 10s ("manually set deadline too short"),
+                # which is longer than we're willing to wait anyway -- the
+                # ThreadPoolExecutor timeout below is our real guard.
+            ),
+        )
+        return (response.text or "").strip()
 
     def _llm_reply(self, user_prompt, start_time, max_tokens=80):
         if self._llm_client is None:
@@ -1048,17 +1143,26 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
         if not self._llm_time_budget_ok(start_time):
             return None
         try:
-            response = self._llm_client.messages.create(
-                model="claude-haiku-5-5",
-                max_tokens=max_tokens,
-                system=self._llm_system_prompt(),
-                messages=[{"role": "user", "content": user_prompt}],
-                timeout=4.0,
-            )
-            text = "".join(
-                block.text for block in response.content
-                if getattr(block, 'type', None) == 'text')
-            text = text.strip()
+            result = {}
+            def _worker():
+                try:
+                    result['text'] = self._gemini_call(user_prompt, max_tokens)
+                except Exception:
+                    result['text'] = None
+            # A slow/overloaded response is abandoned after a short,
+            # fixed client-side timeout instead of blocking make_move --
+            # the API itself refuses to honor anything shorter than 10s
+            # as its own deadline, far too slow for a competitive move.
+            # The thread is a daemon so an abandoned call can keep running
+            # in the background without blocking process exit at the end
+            # of the game (plain ThreadPoolExecutor threads are NOT
+            # daemons and would do exactly that).
+            worker = threading.Thread(target=_worker, daemon=True)
+            worker.start()
+            worker.join(timeout=self.LLM_CALL_TIMEOUT_SECONDS)
+            if worker.is_alive():
+                return None
+            text = result.get('text')
             return text if text else None
         except Exception:
             return None

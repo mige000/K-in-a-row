@@ -212,54 +212,55 @@ chronological order.  Key areas to address:
     were most useful?
   </pre>
   <font color="blue">
-  <p>
-  Work proceeded roughly as follows:
-  </p>
   <ol>
-    <li><b>Read the starter code first.</b> Before writing anything, we
-    went through <code>game_types.py</code> (where <code>k</code> and the
-    board tokens live), <code>agent_base.py</code> (the three playing
-    modes and the required return shapes), and <code>RandomPlayer.py</code>
-    (its <code>move_gen</code> generator, which turned out to matter later
-    for matching the autograder's expected row-major move order).</li>
-    <li><b>Move generator, minimax skeleton, and alpha-beta together.</b>
-    Rather than staging these as three separate passes, they were written
-    as one coherent <code>minimax()</code> because the recursion, the
-    depth-limit base case, and the alpha/beta bookkeeping are tightly
-    coupled in a single loop over <code>_generate_moves()</code>; trying
-    to retrofit pruning onto an already-written plain-minimax loop seemed
-    more error-prone than designing the loop with both modes in mind from
-    the start (the <code>pruning</code> flag simply gates whether the
-    alpha/beta comparisons run at all).</li>
-    <li><b>Static evaluation.</b> Implemented as a scan of every k-length
-    window in all four directions (see Section 5a), checked against the
-    course autograder's required ordering on 10 labeled test states.</li>
-    <li><b>Validation against <code>autograder.py</code>.</b> This was
-    used continuously, not just at the end &mdash; after each component
-    was written, <code>python3 autograder.py</code> was re-run to check
-    for regressions, which is how a real bug was caught (see Section 7).</li>
-    <li><b>Performance work</b> (iterative deepening with a time budget,
-    candidate-cell restriction for larger boards, a Zobrist transposition
-    table) came after correctness was established, verified by timing a
-    few full games against <code>RandomPlayer</code> on all three game
-    types and confirming the worst per-move time stayed well under the
-    budget.</li>
-    <li><b>Dialog (Part II)</b> came after Part I's search/eval work and
-    extra credit were already passing the self-check autograder: the
-    placeholder "Alpha Vector" utterances were replaced with the "Kitti"
-    persona, an IF-THEN rule engine driven off the existing search
-    instrumentation (nodes visited, leaf evals, cutoffs, Zobrist hits,
-    best-vs-runner-up root scores), the two mandatory trigger-phrase
-    features, and an optional Claude layer on top. See Section 6 for the
-    full design.</li>
+    <li>We first read the starter code. Before writing anything, we went
+    through <code>game_types.py</code> (where <code>k</code> and the board
+    tokens live), <code>agent_base.py</code> (the three playing modes and
+    the required return shapes), and <code>RandomPlayer.py</code>. We
+    tried to understand what the different components of each file meant
+    and how to use them to help us in our implementation.</li>
+    <li>Next we worked on the Move generator, minimax skeleton, and
+    alpha-beta. Rather than staging these as three separate passes, they
+    were written as one coherent <code>minimax()</code> because the
+    recursion, the depth-limit base case, and the alpha/beta bookkeeping
+    are tightly coupled in a single loop over <code>_generate_moves()</code>;
+    trying to retrofit pruning onto an already-written plain-minimax loop
+    seemed more error-prone than designing the loop with both modes in
+    mind from the start (the <code>pruning</code> flag simply gates
+    whether the alpha/beta comparisons run at all).</li>
+    <li>Next we did a static evaluation, implemented as a scan of every
+    k-length window in all four directions (see Section 5a), checked
+    against the course autograder's required ordering on 10 labeled test
+    states.</li>
+    <li>We then validated against <code>autograder.py</code>. This was
+    used continuously, not just at the end. After each component was
+    written, <code>python3 autograder.py</code> was re-run to check for
+    regressions.</li>
+    <li>Then we worked on optimizing the performance (iterative deepening
+    with a time budget, candidate-cell restriction for larger boards, a
+    Zobrist transposition table). We verified by timing a few full games
+    against <code>RandomPlayer</code> on all three game types and
+    confirming the worst per-move time stayed well under the budget.</li>
+    <li>Next we worked on dialog. We worked on coming up with a persona
+    and playing style we both agreed on. Then made a twin that mimicked
+    our main agent's persona, but with a twist. We also made it so the
+    twin plays more defensively. We created an IF-THEN rule engine driven
+    off the existing search instrumentation (nodes visited, leaf evals,
+    cutoffs, Zobrist hits, best-vs-runner-up root scores), the two
+    mandatory trigger-phrase features, and then implemented Gemini to come
+    up with responses on the spot. With our Gemini responses, the response
+    time is not stable, so we had to make a cutoff, making it so some of
+    our responses are from our IF-THEN statements, and some are from
+    Gemini when it comes up with a response in time. We learned that
+    having the IF-THEN fallbacks were essential, especially with how long
+    it could take Gemini to respond with a dialog.</li>
   </ol>
   <p>
-  The most useful resources were the starter files themselves &mdash;
-  in particular <code>agent_base.py</code>'s stub comments (which spell
-  out the exact return shapes expected in each mode) and
-  <code>autograder.py</code>'s test states and docstrings, which made it
-  possible to verify correctness objectively (exact leaf counts, exact
-  expected moves) rather than guessing from gameplay alone.
+  The most useful resources were the starter files themselves. Reading the
+  starter code helped us understand what the assignment was asking and
+  where we should start coding wise. Also reading the lecture notes helped
+  us understand the algorithms, as well as watching YouTube videos about
+  these algorithms.
   </p>
   </font>
   </font></td></tr>
