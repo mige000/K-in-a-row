@@ -121,29 +121,28 @@ note how you divided the work.
     board size or k value?
   </pre>
   <font color="blue">
-  <p><b>2a. Agent identity.</b> Our agents is named Kitti. She is a gamer
+  <p><b>2a.</b> Our agent's is named Kitti. She is a gamer
   girl who loves a night in watching anime. She is chronically online and
   spends most of her free time doomscrolling on TikTok. She is very sweet,
   a little chaotic, and secretly very competitive. She also overthinks
   every move, which is exactly why she can recite precise alpha-beta
   statistics on request without sounding like a textbook.</p>
-  <p><b>2b. Twin.</b> The twin instance is named Bunni. She plays the same
-  games but much more cautiously. Bunni is distinct in three independent
+  <p><b>2b.</b> The twin instance is named Bunni. She plays the same
+  games but much more cautiously. Bunni is different in three
   ways:</p>
   <ul>
-    <li><i>Voice:</i> Bunni's lines (<code>BUNNI_LINES</code>) use only
-    plain ASCII emoticons (<code>^w^</code>, <code>&gt;.&lt;</code>,
-    <code>T_T</code>) instead of Kitti's elaborate Unicode kaomoji, and
-    bunny vocabulary (hop, ears up, thump thump, binky, nibble) instead of
+    <li>Voice: Bunni's lines use only
+    plain ASCII emoticons instead of Kitti's elaborate Unicode kaomoji, and
+    bunny vocabulary instead of
     cat puns.</li>
-    <li><i>Strategy:</i> <code>static_eval</code> applies a
-    <code>defensive_bias</code> multiplier (1.8 for Bunni, 1.0/neutral for
+    <li>Strategy: <code>static_eval</code> applies a
+    <code>defensive_bias</code> multiplier (1.8 for Bunni, 1.0 (neutral) for
     Kitti) to whichever side is not the agent's own, so Bunni's search
     values blocking the opponent's near-complete lines more than building
     her own. On one identical test board (Tic-Tac-Toe, O two away from a
     row with X one square from blocking) this alone moved the same
     position's evaluation from -100.1 (Kitti) to -196.1 (Bunni).</li>
-    <li><i>Dialog thresholds:</i> Bunni's bucket thresholds in
+    <li>Dialog thresholds: Bunni's bucket thresholds in
     <code>_choose_bucket</code> are tighter (e.g. she calls "danger" at an
     eval of -80 instead of -120, and needs +180 rather than +120 before
     she'll call a position "winning"), so she reads as more jumpy/modest
@@ -151,26 +150,25 @@ note how you divided the work.
   </ul>
   <p>
   We chose to make her more defensive since we thought that matched a
-  bunny's personality more, compared to a cat who is a lot less afraid. We
-  also chose to change how she talks since that matches her name more,
-  compared to acting like a cat. The dialog thresholds were used to convey
+  timid bunny's personality more, compared to a cat who might be a predator to a bunny.
+  We also thought that making her more defensive would make the gameplay more interesting since
+  the two characters would have a different strategy and approach to making moves. We didn't want
+  to keep on ending in ties.
+  The dialog thresholds were used to convey
   these changes through how she speaks.
   </p>
-  <p><b>2c. Game-type coverage.</b> We tested the most on Tic-Tac-Toe. It
-  is exercised directly by <code>autograder.py</code> (full game
-  play-throughs as both X and O against <code>RandomPlayer</code>, static
-  evaluation ordering, and the minimax/alpha-beta leaf-count tests) and by
-  several ad hoc scripts run during development. Five-in-a-Row and Cassini
+  <p><b>2c.</b> We tested the most on Tic-Tac-Toe. It
+  is played directly by <code>autograder.py</code> and by
+  several scripts run during development. Five-in-a-Row and Cassini
   were each tested with at least one complete game against
   <code>RandomPlayer</code> and one agent-vs-twin self-play game, verifying
   the agent wins quickly against random play and stays within the
-  per-move time budget (worst observed move time was under 0.4s on
-  Cassini with a 1-second budget), but they did not get the same breadth
-  of adversarial testing as Tic-Tac-Toe. No concrete bugs were found on
+  per-move time budget, but they did not get the same breadth
+  of adversarial testing as Tic-Tac-Toe. No actual bugs were found on
   the larger boards, but the candidate-restriction move generator (which
-  only considers squares within a radius of 2 of existing stones) is an
-  unverified risk specific to the larger board sizes and it has not been
-  stress-tested against a position where the objectively correct move is
+  only considers squares within a radius of 2 of existing stones) is a 
+  possible risk in larger board sizes since it has not been
+  tested against a position where the objectively correct move is
   far from all current stones.</p>
   </font>
   </font></td></tr>
@@ -291,39 +289,35 @@ of how minimax works in textbooks are not sufficient.
     Expected best move: (1,2).  Plain-minimax leaf count: 12.
   </pre>
   <font color="blue">
-  <p><b>4a. Implementation overview.</b>
-  Everything happens inside a single function, <code>minimax()</code> in
-  <code>yourID_KInARow.py</code>. Alpha and beta are ordinary function
-  arguments, not shared mutable state: each call to <code>minimax</code>
-  keeps its own local <code>alpha</code>/<code>beta</code> variables,
-  seeded from the values its caller passed in. Inside the loop over
-  candidate moves, after each child's backed-up value is returned, the
+  <p><b>4a.</b>
+  Everything happens inside the function <code>minimax()</code> in
+  <code>reidunt_KInARow.py</code>. Alpha and beta are function
+  arguments, each call to <code>minimax</code> keeps its own local <code>alpha</code>/<code>beta</code> variables,
+  from the values its caller passed in. Inside the loop over
+  candidate moves, after each child's value is returned, the
   current node updates its own bound (<code>alpha = max(alpha, best_val)</code>
   for a maximizing node, <code>beta = min(beta, best_val)</code> for a
   minimizing node) and checks <code>if alpha &gt;= beta: cutoff; break</code>.
-  The <code>break</code> simply exits the for-loop over
+  The <code>break</code> exits the for-loop over
   <code>moves</code>, so any remaining sibling moves in that list are
-  never generated into child states or recursed into at all.
-  Propagation to ancestors happens through the ordinary return value: the
-  parent passes its (possibly already-tightened) <code>alpha</code>/<code>
-  beta</code> into every child call it makes in its own loop, so a bound
-  tightened by one child is visible to the next child's entire subtree,
-  and a cutoff anywhere in that subtree in turn bubbles back up as soon as
+  never explored. Propagating back up happens through the return value. The
+  parent passes its (possibly already tightened) <code>alpha</code>/<code>beta</code> 
+  into every child call it makes in its own loop, so a child's tightened bound
+  is visible to the next child's entire subtree,
+  and a cutoff anywhere in that subtree then bubbles back up as soon as
   that recursive call returns.
   </p>
-  <p><b>4b. Effectiveness measurement.</b>
-  Depth-4 search from the Tic-Tac-Toe initial state, alpha-beta pruning ON
-  vs. OFF, same static evaluator, same (unordered, candidate-restricted)
-  move order in both runs:
+  <p><b>4b.</b>
+  Using depth-4 search from the Tic-Tac-Toe initial state: 
   </p>
   <pre>
-              nodes visited   alpha-beta cutoffs   leaf evaluations
-  AB OFF           66                 0                  336
-  AB ON            36                20                  123
+                    static evaluations
+  Alpha-Beta OFF            336
+  Alpha-Beta ON             123
   </pre>
   <p>
-  Alpha-beta reduced the number of leaf (static_eval) calls from 336 to
-  123 &mdash; a saving of 213 evaluations, a <b>63.4% reduction</b> &mdash;
+  Alpha-beta reduced the number of static evaluation from 336 to
+  123, so we saved 213 evaluations, or a 63.4% reduction.
   while both searches picked the identical move, (1,1), with the identical
   backed-up score (0.0333...), confirming the pruning did not change the
   result, only the work needed to find it.
