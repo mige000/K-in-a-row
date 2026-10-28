@@ -234,6 +234,32 @@ chronological order.  Key areas to address:
     Gemini when it comes up with a response in time. We learned that
     having the IF-THEN fallbacks were essential, especially with how long
     it could take Gemini to respond with a dialog.</li>
+    <li>Next we generated the actual game transcript we had to turn in.
+    We pointed <code>Game_Master_Offline.py</code> at Cassini with Kitti
+    playing her twin Bunni, ran the game through to the end, and converted
+    the HTML transcript the Game Master auto-generates into a PDF with
+    headless Chrome, keeping the same filename.</li>
+    <li>After that we went back and actually fixed the Gemini slowness
+    instead of just living with the fallback. We dug into the raw errors
+    instead of just letting them get caught and swallowed, and found three
+    separate problems in our own code (the model was spending its token
+    budget on hidden "thinking" before writing anything, a timeout we set
+    ourselves was too short for the API to even accept, and our first way
+    of cutting off a slow call was blocking the whole program from
+    closing). On top of that, the specific Gemini model we were calling
+    kept getting overloaded or rate-limited. Switching to a lighter,
+    faster model (<code>gemini-flash-lite-latest</code>) fixed it outright
+    &mdash; after that, real calls through the agent came back in under a
+    second almost every time, instead of only sometimes.</li>
+    <li>Last, we checked whether Kitti and Bunni's different playing
+    styles were actually doing anything, since we noticed every game
+    between them on Cassini ended in a draw. We played several games at
+    different search depths with each of them on both sides, then tested
+    two identical copies of the same agent against each other as a
+    control. Those drew too, every time, while the same agent still beat
+    <code>RandomPlayer</code> decisively. That told us the draws are
+    normal for two agents built on the same search facing each other, not
+    a sign that the defensive bias isn't doing anything real.</li>
   </ol>
   <p>
   The most useful resources were the starter files themselves. Reading the
