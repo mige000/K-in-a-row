@@ -1038,60 +1038,103 @@ If you did not complete any extra credit options, omit this section.
   children.
   </p>
 
-  <p><b>Part II: LLM-assisted dialog (Claude, via the Anthropic SDK)</b></p>
+  <p><b>Part II: LLM-assisted dialog (Gemini, via the google-genai SDK)</b></p>
   <p>
-  <code>prepare()</code> only imports <code>anthropic</code> when
-  <code>self.playing_mode == KAgent.DEMO</code> and <code>utterances_matter</code>
-  is true, exactly as the assignment specifies, and the import plus client
-  construction are wrapped in a <code>try/except</code> that leaves
-  <code>self._llm_client</code> as <code>None</code> on any failure. The
-  API key is read from the <code>ANTHROPIC_API_KEY</code> environment
-  variable rather than hard-coded in the file. <i>Why:</i> this repository
-  is public on GitHub, and a hard-coded key in a public repo gets scraped
-  by automated bots within minutes of pushing &mdash; unlike a free-tier
-  Gemini key, an Anthropic key is billed by default with no inherent spend
-  cap, so the downside of a leak is an unbounded bill rather than just
-  rate-limiting. Every call site that actually talks to the API
-  (<code>_llm_reply</code>, used by both <code>_llm_commentary</code> for
-  ordinary per-turn lines and <code>_llm_story</code> for the "what's your
-  take" feature) is also independently wrapped in a
-  <code>try/except Exception</code> and returns <code>None</code> on any
-  failure, at which point <code>_generate_utterance</code> falls back to
-  the rule-based <code>KITTI_LINES</code> bank or template, so the agent
-  never raises and never stalls waiting on a hung request. A time-budget
-  guard (<code>_llm_time_budget_ok</code>) also skips the LLM call
-  entirely once more than 1.6s of the move has already been spent or less
-  than 1.0s remains before the search deadline, so a slow network can
-  never push a DEMO-mode move past the "no more than 3 sec" guidance.
+  <code>prepare()</code> only imports <code>google.genai</code> when
+  <code>self.playing_mode == KAgent.DEMO</code> and
+  <code>utterances_matter</code> is true, exactly as the assignment
+  specifies, and the import plus client construction are wrapped in a
+  <code>try/except</code> that leaves <code>self._llm_client</code> as
+  <code>None</code> on any failure. The API key is resolved from
+  <code>gemini_key_local.py</code> (a file listed in <code>.gitignore</code>)
+  first, then the <code>GEMINI_API_KEY</code> environment variable &mdash;
+  never hard-coded directly into this tracked file. <i>Why:</i> this
+  repository is public on GitHub, and a hard-coded key in a public repo
+  gets scraped by bots within minutes of pushing. A gitignored local file
+  gets the same "it just works, no env var setup" convenience the
+  assignment wants for a direct handoff (zip, email, Canvas upload) to a
+  specific person, without ever risking that key reaching the public repo
+  by an accidental <code>git add -A</code>. Every call site that actually
+  talks to the API is wrapped in its own <code>try/except Exception</code>
+  and returns <code>None</code> on any failure, at which point
+  <code>_generate_utterance</code> falls back to the rule-based
+  <code>KITTI_LINES</code>/<code>BUNNI_LINES</code> bank, so the agent
+  never raises and never stalls waiting on a hung request.
   </p>
   <p>
-  <i>Verification (no real key available in this environment).</i> I could
-  not end-to-end test an actual Claude response from this sandbox, but I
-  directly verified every failure path the assignment specifically warns
-  about, by running <code>make_move</code> under each condition and
-  confirming the agent kept playing with a valid, non-empty, in-character
-  utterance every time:
+  <i>Getting it actually working took real debugging, not just plumbing.</i>
+  I originally built this against Claude (Anthropic's API); when asked to
+  switch to Gemini for easier free-tier sharing, the same design carried
+  over, but live testing against a real key surfaced three real bugs
+  before a single genuine response came through:
+  </p>
+  <ul>
+    <li>Gemini's Flash models spend part of <code>max_output_tokens</code>
+    on hidden "thinking" tokens before writing visible text; at our small
+    token budgets (60-120) this silently returned completely empty
+    responses (<code>finish_reason: MAX_TOKENS</code>, no visible text at
+    all). Diagnosed by inspecting <code>response.candidates[0]</code>
+    directly instead of trusting <code>response.text</code>.</li>
+    <li>A custom 4-second <code>http_options</code> timeout I added as a
+    safety net was rejected outright by the API itself:
+    <code>"Manually set deadline 4s is too short. Minimum allowed deadline
+    is 10s."</code> &mdash; longer than we're willing to wait regardless,
+    so I dropped it in favor of our own client-side cutoff.</li>
+    <li>That client-side cutoff was first built with
+    <code>concurrent.futures.ThreadPoolExecutor</code>, but its default
+    shutdown behavior blocks the whole Python process from exiting until
+    every submitted task finishes &mdash; including an abandoned, still-running
+    slow call. Switched to an explicit <code>threading.Thread(daemon=True)</code>
+    so an abandoned call can keep running in the background without
+    blocking anything.</li>
+  </ul>
+  <p>
+  After those fixes, calls to the default model alias
+  (<code>gemini-flash-latest</code>, which resolved to
+  <code>gemini-3.8-flash</code>) sometimes worked (one genuine success:
+  <i>"weak?? bold words for someone whose pieces i'm about to knock off
+  the board (&#172;&#8255;&#172;) just wait and see &gt;:3"</i>, correctly
+  reacting to an opponent's taunt) but were wildly inconsistent &mdash;
+  anywhere from under a second to <b>145 seconds</b>, and repeatedly
+  hitting both the free tier's 5-requests-per-minute quota (<code>429
+  RESOURCE_EXHAUSTED</code>) and genuine server overload
+  (<code>503 UNAVAILABLE</code>, "this model is currently experiencing
+  high demand") during testing. Tracing a raw exception showed the SDK's
+  own <code>tenacity</code>-based automatic retry logic was quietly
+  retrying overloaded requests with backoff <i>inside</i> the worker
+  thread, which is what turned single calls into multi-minute waits.
+  </p>
+  <p>
+  <i>The actual fix:</i> switching to <code>gemini-flash-lite-latest</code>
+  (a lighter model than the "3.8 Flash" the default alias pointed to) and
+  removing the <code>thinking_config</code> parameter entirely &mdash; it
+  turned out to cause a <code>400 INVALID_ARGUMENT</code> specifically on
+  the lite model (it apparently doesn't take that parameter the same way),
+  and empirically the lite model doesn't eat the visible-text budget on
+  hidden thinking the way the heavier model did, so no workaround was even
+  needed. After this change, repeated calls through the actual agent
+  consistently returned genuine, in-character, context-aware responses in
+  <b>well under one second each</b>:
   </p>
   <pre>
-  SDK not installed (ModuleNotFoundError on `import anthropic`):
-      prepare() -> 'OK', self._llm_client is None, move proceeds normally.
-  ANTHROPIC_API_KEY set to a fake/invalid value, SDK missing:
-      prepare() -> 'OK', self._llm_client is None, move proceeds normally.
-  playing_mode == COMPETITION, utterances_matter=False:
-      prepare() -> 'OK', self._llm_client is None (import never attempted),
-      utterance -> 'ok.'
+  "oh it's so on &gt;:3 my paws are ready for this (&#65507;&#9661;&#65507;)"           (opening)
+  "wait hold on, my paw slipped (&#65507;&#9661;&#65507;) that eval is literally a lie omg"  (reacting to trash talk)
+  "wait you actually almost had me back there (&#65507;&#9661;&#65507;) but my
+   paws are firmly on the lead now. 60/40 odds says i take this /&#5152; - &#725; -&#12510;"
+                                                        (LLM-enhanced story feature)
   </pre>
   <p>
-  <i>What I learned.</i> Writing the fallback-safety code was almost all of
-  the actual effort here &mdash; the "happy path" API call is a few lines,
-  but making sure three independent kinds of failure (missing package,
-  missing/bad key, slow network) all degrade to the same safe behavior
-  took real design thought (gating at import time <i>and</i> at call time,
-  plus a time budget separate from the search's own deadline). I'd
-  recommend testing these failure paths explicitly rather than assuming
-  "it'll just except out fine" &mdash; it's easy to leave one path (e.g. a
-  hung request with no client-side timeout) that doesn't actually fail
-  fast.
+  <i>What I learned.</i> Writing the fallback-safety code was necessary but
+  not sufficient &mdash; a graceful fallback can mask a real, fixable
+  problem (ours was never a key or network issue; it was parameter
+  choices and a model-selection trade-off) if you stop debugging as soon
+  as the fallback makes the agent "work." The three infrastructure bugs
+  (thinking tokens, the rejected timeout, the executor-blocks-exit issue)
+  were all found by deliberately bypassing the try/except to look at raw
+  exceptions and response objects, not by reading documentation first.
+  I'd also flag the lite-vs-full-model choice as a transferable lesson:
+  for a short, low-stakes, single-turn persona line, the "smaller" model
+  was not just cheaper but also more reliable, not a trade-off at all.
   </p>
 
   <p><b>Part II: mandatory trigger-phrase features</b></p>
@@ -1099,21 +1142,25 @@ If you did not complete any extra credit options, omit this section.
   Both are implemented as special cases checked before the ordinary
   IF-THEN bucket logic in <code>_generate_utterance</code>, matching
   against the opponent's exact last utterance
-  (<code>current_remark</code>), case-insensitively.
+  (<code>current_remark</code>), case-insensitively. Both examples below
+  are from the same real, complete Tic-Tac-Toe transcript
+  (<code>Kitti-vs-Chatty-in-TTT-round-1.html/.pdf</code>), generated with a
+  scripted opponent that asks these exact phrases, alongside genuinely
+  LLM-generated commentary elsewhere in the same game (see above) &mdash;
+  Kitti wins this game.
   </p>
   <p>
-  <i>"Tell me how you did that"</i> &mdash; real output captured from an
-  actual <code>make_move</code> call (Tic-Tac-Toe, depth-6 search):
+  <i>"Tell me how you did that"</i>:
   </p>
   <pre>
-  ok so you asked for it lol (=^･ω･^=) for that move i looked at 288
-  positions total, and 150 of those were leaf positions i actually
-  scored. i got to depth 6 which was as deep as i was allowed to go
-  (0.01s, i'm slow ok ;-;). i pruned 211 branches with alpha-beta
+  ok so you asked for it lol (=^&#65381;&#969;&#65381;^=) for that move i looked
+  at 34 positions total, and 59 of those were leaf positions i actually
+  scored. i got to depth 3 which was as deep as i was allowed to go
+  (0.01s, i'm slow ok ;-;). i pruned 20 branches with alpha-beta
   cutoffs, which is basically me going "nope, already know that's
   worse" and swatting it away ^-^ i didn't even bother with my zobrist
-  memory trick this move. the best move scored +0, the runner-up was
-  +0, so i was pretty sure about this one (￣▽￣)
+  memory trick this move. the best move scored +120, the runner-up was
+  +120, so i was pretty sure about this one (&#65507;&#9661;&#65507;)
   </pre>
   <p>
   Every number is read directly from this turn's real counters
@@ -1125,29 +1172,30 @@ If you did not complete any extra credit options, omit this section.
   the latter two collected via a one-shot flag,
   <code>_collect_root_scores</code>, that lets <code>minimax()</code>
   record every root child's exact backed-up value without changing the
-  recursive algorithm itself).
+  recursive algorithm itself). This feature never calls the LLM &mdash;
+  it is always the deterministic template, by design, so it is reliable
+  regardless of API availability.
   </p>
   <p>
-  <i>"What's your take on the game so far?"</i> &mdash; real output
-  captured mid-game:
+  <i>"What's your take on the game so far?"</i> &mdash; this one <i>did</i>
+  go through Gemini, since the model responded in time:
   </p>
   <pre>
-  ok story time (=^･ω･^=) around move 2 you clawed some of that back
-  (you said "Tell me how you did that"). honestly my eval says it's
-  pretty even right now, could go either way, 50/50 @~@
+  wait you actually almost had me back there (&#65507;&#9661;&#65507;) but
+  my paws are firmly on the lead now. 60/40 odds says i take this
+  /&#5152; - &#725; -&#12510;
   </pre>
   <p>
   This comes from <code>_story_and_prediction()</code>, which scans
   <code>self.game_history</code> (appended to every turn by
   <code>_record_turn</code>) for the largest-magnitude eval swings between
-  consecutive moves, narrates each as a turning point (quoting the
-  opponent's own stored utterance from that turn when there is one), and
-  closes with a win/loss prediction whose confidence band is a direct
-  function of the current eval. When a Claude client is available,
-  <code>_llm_story</code> feeds this same template output to the model as
-  factual context and asks for the model's own phrasing instead; the
-  template version above is what ships whenever no client is available,
-  which is always true in this evaluation environment.
+  consecutive moves and builds a template narrative with a win/loss
+  prediction; <code>_llm_story</code> then feeds that template to Gemini
+  as factual context and asks for its own phrasing. Here Gemini's version
+  keeps the template's actual content (acknowledging a swing, then citing
+  a 60/40 prediction) while rephrasing it in Kitti's voice, which is
+  exactly the intended behavior: the template guarantees the facts are
+  right, and the LLM is only responsible for how it's said.
   </p>
   </font>
   </font></td></tr>

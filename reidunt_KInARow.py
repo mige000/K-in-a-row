@@ -1116,23 +1116,26 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
     def _gemini_call(self, user_prompt, max_tokens):
         from google.genai import types
         response = self._llm_client.models.generate_content(
-            model="gemini-flash-latest",  # Google's rolling alias for its
-            # current fast/cheap model, so this doesn't go stale when
-            # specific dated model names get retired.
+            model="gemini-flash-lite-latest",  # Google's rolling alias for
+            # its current lightest/fastest model. Measured well under 1s
+            # per call in testing, vs. 90-145s (or outright quota/overload
+            # failures) on gemini-flash-latest (the heavier "3.8 Flash"
+            # model) during the same testing session -- the lite model
+            # also appears to sit on a separate, less contested quota.
             contents=user_prompt,
             config=types.GenerateContentConfig(
                 system_instruction=self._llm_system_prompt(),
                 max_output_tokens=max_tokens,
-                # Current Flash models spend part of max_output_tokens on
-                # hidden "thinking" tokens before writing visible text; at
-                # our small token budgets that can eat the whole response
-                # and return empty text. We only need a one-line persona
-                # quip, not multi-step reasoning, so turn thinking off.
-                thinking_config=types.ThinkingConfig(thinking_budget=0),
-                # No explicit http_options timeout: the API rejects any
-                # value under 10s ("manually set deadline too short"),
-                # which is longer than we're willing to wait anyway -- the
-                # ThreadPoolExecutor timeout below is our real guard.
+                # NOTE: unlike gemini-flash-latest, passing
+                # thinking_config=ThinkingConfig(thinking_budget=0) here
+                # causes a 400 INVALID_ARGUMENT on this model -- omit it;
+                # empirically this model does not eat the visible-text
+                # budget on hidden thinking tokens the way Flash does.
+                #
+                # No explicit http_options timeout either: the API
+                # rejects any value under 10s ("manually set deadline too
+                # short"), longer than we're willing to wait anyway -- the
+                # daemon-thread timeout below is our real guard.
             ),
         )
         return (response.text or "").strip()
