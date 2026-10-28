@@ -127,9 +127,9 @@ note how you divided the work.
   a little chaotic, and secretly very competitive. She also overthinks
   every move, which is exactly why she can recite precise alpha-beta
   statistics on request without sounding like a textbook.</p>
-  <p><b>2b.</b> The twin instance is named Bunni. She plays the same
-  games but much more cautiously. Bunni is different in three
-  ways:</p>
+  <p><b>2b.</b> The twin instance is named Bunni. She is Kitti's roommate,
+      and plays the same games but much more cautiously. Bunni is different in
+      three ways:</p>
   <ul>
     <li>Voice: Bunni's lines use only
     plain ASCII emoticons instead of Kitti's elaborate Unicode kaomoji, and
@@ -548,6 +548,21 @@ of how minimax works in textbooks are not sufficient.
   position into a winning, building, danger, or quiet band. Each of these
   conditions maps to a named bucket of lines written for the persona, and
   the agent picks one line from whichever bucket matches.</p>
+  <p>
+  That bucket logic decides the <i>situation</i>, but it isn't always what
+  decides the actual <i>words</i>. When Gemini is available, we still run
+  <code>_choose_bucket()</code> first and use its line as the fallback,
+  but before falling back we hand the model the real board (as text), our
+  real eval number, and the opponent's actual last remark, and ask it to
+  react to that directly instead of just reading out the bucket's
+  hand-written line. So game-state relevance happens two ways now: the
+  bucket decides which mood applies, and separately, whenever Gemini
+  responds in time, the model is reacting to the literal board and score
+  that turn instead of a pre-written line for that mood. Section 11 has
+  real examples of this &mdash; e.g. Kitti's opening line in one transcript
+  was freshly generated ("oh no it's not, i'm already miles ahead...") and
+  clearly reacted to the real position, not just "it's move 1."
+  </p>
   <p><b>6b. Opponent responsiveness.</b> The opponent's remark comes into
   <code>make_move</code> as <code>current_remark</code> every turn, and
   our agent responds to it in two ways. First, we keep a small keyword
