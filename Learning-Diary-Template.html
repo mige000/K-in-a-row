@@ -59,7 +59,7 @@
 Student name(s): <font color="blue">Tafjord, Reidun; Ge, Michelle</font>
 Student ID(s): <font color="blue">2460054, 2438243</font>
 Agent name: <font color="blue">Kitti</font>
-Game-type focus: <font color="blue">(e.g., Tic-Tac-Toe, Cassini, Five-in-a-Row)</font>
+Game-type focus: <font color="blue">Cassini</font>
 Submission date: <font color="blue">October 30, 2026</font>
   </pre>
   </font></td></tr>
@@ -570,7 +570,7 @@ of how minimax works in textbooks are not sufficient.
   filled in with the real search stats from that turn. "What's your take
   on the game so far" builds a summary from <code>self.game_history</code>,
   a log we keep from <code>prepare()</code> on that stores the move
-  number, move, eval score, my utterance, and the opponent's utterance for
+  number, move, eval score, our utterance, and the opponent's utterance for
   every turn. Because the log includes what the opponent said, Kitti can
   quote their actual words from key moments in the game.</p>
   <p><b>6c. Persona consistency.</b> Kitti is a cat girl who overthinks
@@ -597,20 +597,20 @@ of how minimax works in textbooks are not sufficient.
   kaomoji's whenever she talks, which reflect the mood she is currently
   in. This gives her a playful and distinct type of dialog.
   </p>
-  <p><b>6d. Approach and tools.</b> I combined all three approaches from
+  <p><b>6d. Approach and tools.</b> We combined all three approaches from
   the assignment. The base is hand-coded rules: <code>_choose_bucket()</code>
   plus the <code>KITTI_LINES</code> bank. They always work, and they're
-  the only thing used when there's no LLM client. On top of that I used
+  the only thing used when there's no LLM client. On top of that we used
   search instrumentation. The node, leaf, cutoff, Zobrist, and
-  best-vs-runner-up counters I built for Part I supply the numbers in the
+  best-vs-runner-up counters we built for Part I supply the numbers in the
   "tell me how you did that" answer, and they also decide when the "deep
   search" bucket gets used. Finally, if an API key is set, Gemini (through
   the <code>google-genai</code> Python SDK) can replace the chosen
-  bucket's line with a new one. My system prompt describes Kitti's voice:
+  bucket's line with a new one. Our system prompt describes Kitti's voice:
   mostly lowercase, casual, kaomoji that match her mood but never two in a
   row, no assistant-style phrasing, tease the opponent a little, and keep
   it to one or two sentences. The user message gives it the current board,
-  my eval, and the opponent's last remark, so the new line still fits what's
+  our eval, and the opponent's last remark, so the new line still fits what's
   happening in the game.
   </p>
   </font>
@@ -676,44 +676,40 @@ commonly hit on this assignment:
   it's useful.
   </p>
   <p>
-  We also ran into real trouble with the speed of the Gemini LLM we use
-  for Kitti's dialogue. At first it timed out constantly, and even when
-  it did respond it could take anywhere from under a second to 145
-  seconds for the exact same kind of request. For a while, the only thing
-  we had to show for it was the fallback working correctly: when the call
-  times out or fails, the agent falls back to the IF-THEN lines from
+  We also ran into trouble with the speed of the Gemini LLM we use for
+  Kitti's dialogue. At first it timed out constantly, and when it did
+  respond it could take anywhere from under a second to 145 seconds for
+  the exact same kind of request. For a while, the only thing we had to
+  show for it was the fallback working correctly: when the call times out
+  or fails, the agent falls back to the IF-THEN lines from
   <code>_choose_bucket()</code> and <code>KITTI_LINES</code>/<code>BUNNI_LINES</code>,
   so Kitti and Bunni always have something to say and the game never
   stalls waiting on the API. That part worked, but it meant almost every
-  turn used hand-written lines instead of generated ones, which wasn't
-  really the point of the extra credit.
+  turn used hand-written lines instead of generated ones.
   </p>
   <p>
   We eventually tracked the slowness down to the model itself, not our
   code. We were calling <code>gemini-flash-latest</code>, which was
   pointing at a heavier model (<code>gemini-3.8-flash</code>), and that
-  model kept hitting the free tier's request limit and genuine server
-  overload on Google's side, and the SDK was quietly retrying those
-  overloaded calls in the background for up to two and a half minutes
-  before giving up. Switching to <code>gemini-flash-lite-latest</code>
-  fixed it outright &mdash; no extra workaround needed, it was just a
-  lighter, more available model. After that switch, repeated real calls
-  through the actual agent came back in well under a second, consistently.
-  Section 11 has the full debugging story and the real lines that came
-  back once this was fixed.
+  model kept hitting the free tier's request limit and server overload on
+  Google's side, and the SDK was quietly retrying those overloaded calls
+  in the background for up to two and a half minutes before giving up.
+  Switching to <code>gemini-flash-lite-latest</code> fixed this issue.
+  After that switch, repeated real calls through the agent came back in
+  well under a second, consistently.
   </p>
   <p>
   One other thing that looked like a bug at first but turned out not to
-  be: our test games between Kitti and Bunni on Cassini kept ending in
-  draws, no matter who played which side. Since they have different
-  playing styles (Bunni's <code>defensive_bias</code>), we expected that
-  to show up as one of them winning more often. To check whether
-  something was actually wrong, we ran Kitti against a plain copy of
-  herself (no bias difference at all) and Bunni against a plain copy of
+  be was in our test games between Kitti and Bunni on Cassini, it kept
+  ending in draws, no matter who played which side. Since they have
+  different playing styles (Bunni's <code>defensive_bias</code>), we
+  expected that to show up as one of them winning more often. To check
+  whether something was actually wrong, we ran Kitti against a plain copy
+  of herself (no bias difference at all) and Bunni against a plain copy of
   herself, and those drew too, every time, at several different search
-  depths. Kitti still beat <code>RandomPlayer</code> on Cassini easily
-  (by turn 9). So the draws aren't a bug &mdash; two agents built on the
-  same search and evaluation logic are just evenly matched enough to
+  depths. Kitti still beat <code>RandomPlayer</code> on Cassini easily (by
+  turn 9). So the draws aren't a bug. We realized that two agents built on
+  the same search and evaluation logic are just evenly matched enough to
   block each other at the depths we can search in time, even when one of
   them is tuned to be more defensive. The bias difference is real and
   measurable (it changes the actual move chosen in a lot of positions,
@@ -839,7 +835,7 @@ this assignment.  Some prompts to consider:
   static_eval function body     B -- AI-generated, reviewed via autograder output
   Utterance generation          B -- persona ("Kitti": voice rules, kaomoji
                                  bank, sample lines, LLM system prompt) was
-                                 entirely my own design brief handed to the
+                                 entirely our own design brief handed to the
                                  AI verbatim; the rule engine, trigger-phrase
                                  features, and LLM wiring are AI-generated
                                  from that brief, reviewed by running real
@@ -912,8 +908,8 @@ this assignment.  Some prompts to consider:
   rather than guess from one game.</p>
   <p><b>9e. Prompt log.</b> The full conversation (including all code and
   tool output) is well over 50K bytes, so per the instructions below is
-  the list of my own prompts, in order. <i>One redaction:</i> at one
-  point I pasted a live GitHub personal access token into the chat to get
+  the list of our own prompts, in order. <i>One redaction:</i> at one
+  point we pasted a live GitHub personal access token into the chat to get
   past a push authentication error; that token value is replaced below
   with <code>&lt;redacted PAT&gt;</code> and the actual token was revoked
   on GitHub immediately afterward &mdash; it is not safe to leave a live
@@ -1138,7 +1134,7 @@ If you did not complete any extra credit options, omit this section.
   as expected since alpha-beta is exact regardless of ordering.
   </p>
   <p>
-  <i>What I learned.</i> The tree-size reduction was far larger than I
+  <i>What we learned.</i> The tree-size reduction was far larger than we
   expected, but it did not translate into a faster wall-clock move in this
   implementation: ordering requires computing <code>static_eval</code> for
   every candidate at every internal node it visits (33018 extra "ordering"
@@ -1204,10 +1200,10 @@ If you did not complete any extra credit options, omit this section.
   reused instead of calling <code>static_eval</code> again.
   </p>
   <p>
-  <i>What I learned.</i> Transpositions are genuinely common in this game
+  <i>What we learned.</i> Transpositions are genuinely common in this game
   even over a short 4-ply search (hundreds of hits), which matches the
   intuition that K-in-a-Row has many move orders reaching the same board.
-  However, because my transposition table is only safe to use for a direct
+  However, because our transposition table is only safe to use for a direct
   cutoff in the no-pruning case, most of its value here came from the
   ordering use case rather than the raw node-skipping use case &mdash; a
   more sophisticated implementation would store alpha/beta bound flags
@@ -1241,7 +1237,7 @@ If you did not complete any extra credit options, omit this section.
   </p>
   <p>
   <i>Getting it actually working took real debugging, not just plumbing.</i>
-  I originally built this against Claude (Anthropic's API); when asked to
+  We originally built this against Claude (Anthropic's API); when asked to
   switch to Gemini for easier free-tier sharing, the same design carried
   over, but live testing against a real key surfaced three real bugs
   before a single genuine response came through:
@@ -1253,11 +1249,11 @@ If you did not complete any extra credit options, omit this section.
     responses (<code>finish_reason: MAX_TOKENS</code>, no visible text at
     all). Diagnosed by inspecting <code>response.candidates[0]</code>
     directly instead of trusting <code>response.text</code>.</li>
-    <li>A custom 4-second <code>http_options</code> timeout I added as a
+    <li>A custom 4-second <code>http_options</code> timeout we added as a
     safety net was rejected outright by the API itself:
     <code>"Manually set deadline 4s is too short. Minimum allowed deadline
     is 10s."</code> &mdash; longer than we're willing to wait regardless,
-    so I dropped it in favor of our own client-side cutoff.</li>
+    so we dropped it in favor of our own client-side cutoff.</li>
     <li>That client-side cutoff was first built with
     <code>concurrent.futures.ThreadPoolExecutor</code>, but its default
     shutdown behavior blocks the whole Python process from exiting until
@@ -1302,7 +1298,7 @@ If you did not complete any extra credit options, omit this section.
                                                         (LLM-enhanced story feature)
   </pre>
   <p>
-  <i>What I learned.</i> Writing the fallback-safety code was necessary but
+  <i>What we learned.</i> Writing the fallback-safety code was necessary but
   not sufficient &mdash; a graceful fallback can mask a real, fixable
   problem (ours was never a key or network issue; it was parameter
   choices and a model-selection trade-off) if you stop debugging as soon
@@ -1310,7 +1306,7 @@ If you did not complete any extra credit options, omit this section.
   (thinking tokens, the rejected timeout, the executor-blocks-exit issue)
   were all found by deliberately bypassing the try/except to look at raw
   exceptions and response objects, not by reading documentation first.
-  I'd also flag the lite-vs-full-model choice as a transferable lesson:
+  We'd also flag the lite-vs-full-model choice as a transferable lesson:
   for a short, low-stakes, single-turn persona line, the "smaller" model
   was not just cheaper but also more reliable, not a trade-off at all.
   </p>
