@@ -1143,24 +1143,28 @@ If you did not complete any extra credit options, omit this section.
   IF-THEN bucket logic in <code>_generate_utterance</code>, matching
   against the opponent's exact last utterance
   (<code>current_remark</code>), case-insensitively. Both examples below
-  are from the same real, complete Tic-Tac-Toe transcript
-  (<code>Kitti-vs-Chatty-in-TTT-round-1.html/.pdf</code>), generated with a
-  scripted opponent that asks these exact phrases, alongside genuinely
-  LLM-generated commentary elsewhere in the same game (see above) &mdash;
-  Kitti wins this game.
+  are from the same real, complete Cassini transcript
+  (<code>Kitti-vs-Bunni-in-Cassini-round-1.html/.pdf</code>): Kitti playing
+  her actual twin Bunni, not a scripted stand-in &mdash; Bunni's own
+  search, defensive bias, and persona voice are fully active for the whole
+  game; only her first two utterances are overridden to literally ask
+  these two phrases, early enough that they are guaranteed to reach Kitti
+  before the game can end. Everything else either of them says, including
+  the many genuinely LLM-generated lines in the opening third of this
+  game, is unscripted.
   </p>
   <p>
   <i>"Tell me how you did that"</i>:
   </p>
   <pre>
-  ok so you asked for it lol (=^&#65381;&#969;&#65381;^=) for that move i looked
-  at 34 positions total, and 59 of those were leaf positions i actually
+  ok so you asked for it lol (=^･ω･^=) for that move i looked at 129
+  positions total, and 1,236 of those were leaf positions i actually
   scored. i got to depth 3 which was as deep as i was allowed to go
-  (0.01s, i'm slow ok ;-;). i pruned 20 branches with alpha-beta
+  (0.17s, i'm slow ok ;-;). i pruned 87 branches with alpha-beta
   cutoffs, which is basically me going "nope, already know that's
   worse" and swatting it away ^-^ i didn't even bother with my zobrist
-  memory trick this move. the best move scored +120, the runner-up was
-  +120, so i was pretty sure about this one (&#65507;&#9661;&#65507;)
+  memory trick this move. the best move scored +760, the runner-up was
+  +760, so i was pretty sure about this one (￣▽￣)
   </pre>
   <p>
   Every number is read directly from this turn's real counters
@@ -1181,9 +1185,8 @@ If you did not complete any extra credit options, omit this section.
   go through Gemini, since the model responded in time:
   </p>
   <pre>
-  wait you actually almost had me back there (&#65507;&#9661;&#65507;) but
-  my paws are firmly on the lead now. 60/40 odds says i take this
-  /&#5152; - &#725; -&#12510;
+  wait no way (・・?) i totally clawed my way back after move two! i'm
+  betting on myself for this one (￣▽￣)
   </pre>
   <p>
   This comes from <code>_story_and_prediction()</code>, which scans
@@ -1192,10 +1195,29 @@ If you did not complete any extra credit options, omit this section.
   consecutive moves and builds a template narrative with a win/loss
   prediction; <code>_llm_story</code> then feeds that template to Gemini
   as factual context and asks for its own phrasing. Here Gemini's version
-  keeps the template's actual content (acknowledging a swing, then citing
-  a 60/40 prediction) while rephrasing it in Kitti's voice, which is
-  exactly the intended behavior: the template guarantees the facts are
-  right, and the LLM is only responsible for how it's said.
+  keeps the template's actual content (acknowledging the swing right
+  after move 2, then giving a confident prediction) while rephrasing it
+  entirely in Kitti's own voice, which is exactly the intended behavior:
+  the template guarantees the facts are right, and the LLM is only
+  responsible for how it's said.
+  </p>
+  <p>
+  <i>What the rest of this transcript shows, honestly.</i> The first 13
+  utterances in this game (both personas, including both trigger-phrase
+  responses above) are genuinely LLM-generated &mdash; e.g. Kitti's
+  opening line, <i>"oh no it's not, i'm already miles ahead ₍^. .^₎⟆
+  paws down this match is mine!"</i>, and Bunni's own reply a few turns
+  later, <i>"thump thump... my ears just went straight up at that! (&gt;_&lt;)
+  i'm keeping all my walls reinforced though, gotta stay safe. (^w^)
+  ~hop~"</i> &mdash; each clearly in that persona's distinct voice, not a
+  generic one. Partway through this 44-turn game the free tier's request
+  quota caught up with us and every later utterance quietly fell back to
+  the IF-THEN templates for the rest of the game (which still ends in a
+  draw with no errors). Rather than regenerate until we got a cleaner
+  run, we kept this transcript as-is: it is a more honest demonstration
+  of the actual required behavior than a cherry-picked one would be,
+  since it shows the feature genuinely working <i>and</i> shows the
+  required graceful degradation, in one real game.
   </p>
   </font>
   </font></td></tr>

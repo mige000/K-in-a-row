@@ -2,30 +2,49 @@
 
 Generates a demonstration transcript (same HTML/JSON recorders, same
 auto-naming convention as a normal Game_Master_Offline.py run) of Kitti
-playing Tic-Tac-Toe against a scripted opponent that asks the two
-mandatory Part II trigger phrases ("Tell me how you did that" and
-"What's your take on the game so far?") early enough to be guaranteed to
-land before the game can end.
+playing Cassini against her actual twin, Bunni -- not a throwaway
+scripted stand-in. Bunni plays for real (her own search, her own
+defensive_bias, her own persona voice) on every turn; only her first two
+utterances are overridden to literally ask the two mandatory Part II
+trigger phrases ("Tell me how you did that" and "What's your take on the
+game so far?"), early enough in the game that they are guaranteed to
+reach Kitti before the game can end.
 
-Temporarily raises Kitti's LLM call timeout (normally 2.5s, safe for
-competitive play) ONLY on this one agent instance, so genuine
-Gemini-generated lines make it into the transcript even while Google's
-live service is responding slowly. This does not change the committed
-default in reidunt_KInARow.py.
-
-Not part of the graded submission.
+Not part of the graded submission; just a tool for generating a
+transcript that exercises specific Part II features on demand.
 '''
 
 import Game_Master_Offline as gm
-import ScriptedChatOpponent
 import reidunt_KInARow as kitti_module
-from game_types import TTT
+from game_types import Cassini
 
-gm.set_game(TTT)
+TRIGGER_PHRASES = [
+    "Tell me how you did that",
+    "What's your take on the game so far?",
+]
+
+
+class ScriptedBunni(kitti_module.OurAgent):
+    '''The real Bunni (twin=True): same search, same defensive bias, same
+    persona voice. Only her first two utterances are overridden so the
+    two mandatory trigger phrases are guaranteed to appear early in the
+    game; every move she makes and every other line she says is her own,
+    unscripted.'''
+
+    def __init__(self):
+        super().__init__(twin=True)
+
+    def make_move(self, *args, **kwargs):
+        result = super().make_move(*args, **kwargs)
+        if self.move_number <= len(TRIGGER_PHRASES):
+            result[1] = TRIGGER_PHRASES[self.move_number - 1]
+        return result
+
+
+gm.set_game(Cassini)
 
 kitti = kitti_module.OurAgent()
-kitti.LLM_CALL_TIMEOUT_SECONDS = 150  # instance override; see module docstring.
-opponent = ScriptedChatOpponent.OurAgent()
+bunni = ScriptedBunni()
 
-gm.set_players(kitti, opponent)
+gm.set_players(kitti, bunni)
 gm.runGame()
