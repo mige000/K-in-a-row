@@ -737,38 +737,29 @@ this assignment.  Some prompts to consider:
   </pre>
   <font color="blue">
   <p>
-  Implementing iterative deepening under a wall-clock budget changed how I
-  think about game-tree search: instead of "minimax to depth N," it is more
-  natural to think of it as an anytime process that produces an improving
+  Implementing minimax search with iterative deepening changed how I
+  think about game-tree search by making me think of it as a process that produces an improving
   sequence of answers, where each depth's result is only trustworthy if
-  that whole depth finished before the clock ran out (which is why the
-  agent only adopts a depth's result after that depth's top-level call
-  returns, catching a timeout exception rather than trying to salvage a
-  half-finished depth). The surprising part was how much a single
-  optimization (the win-shortcut in Section 7) could clash with a grading
-  reference's implicit assumptions &mdash; "correct and fast" and "matches
-  the expected leaf count" turned out to be two different properties, and
-  only one of them was actually being tested.
+  that whole depth finished before the clock ran out. It surprised me how we had to ensure that the
+  agent must only use a depth's result after that depth's top-level call
+  returns, and catches a timeout exception rather than try to use an uncompleted depth.
   </p>
   <p>
-  The most useful connection to make is to the alpha-beta measurement in
-  Section 11 (Extra Credit): fewer nodes visited is not automatically
-  faster in wall-clock time if the per-node work (here, calling
-  <code>static_eval</code> to order children) is expensive relative to
-  what it saves. That is the same lesson taught more abstractly in
-  discussions of asymptotic complexity vs. real performance &mdash; Big-O
-  node counts and actual runtime can diverge once you account for the
-  constant factors.
+  A connection we made while working on the alpha-beta measurement for the extra credit was that
+  fewer nodes visited is not automatically faster if the per-node work (calling
+  <code>static_eval</code> to order children) is expensive in comparison to
+  what it saves. This is the same type of idea that we learned about in a more abstract way when we
+  learned about asymptotic estimates vs. real performance. I remember learning about how Big-O
+  counts and actual runtime can become different once you take into account the constant factors.
   </p>
   <p>
-  If I were explaining alpha-beta to a classmate who had not implemented
-  it yet, the one thing I would say is: <i>the bound you are pruning with
-  (alpha at a max node, beta at a min node) is not a property of the
-  subtree you're currently searching &mdash; it is a guarantee from
-  somewhere else in the tree that the player who owns that bound already
-  has in hand. You're not saying "this subtree is bad"; you're saying "it
-  doesn't matter whether this subtree is bad, because nobody would ever
-  choose to go here anyway."</i>
+  If I were to explain alpha-beta pruning to a classmate, the most important thing I would tell them
+  is that the bound you are pruning with is not a property 
+  of the subtree you're currently searching, it's a guarantee from somewhere else in the tree that 
+  the player who owns that bound already has. It's not saying that this subtree is bad, it's just 
+  saying that it doesn't matter whether this subtree is bad, because nobody would ever choose to go here anyway.
+  Pruning makes the search faster because if you find a branch that cannot lead to a better outcome than what a player already has available,
+  you don't need to keep exploring it.
   </p>
   </font>
   </font></td></tr>
@@ -979,45 +970,21 @@ over today?
   </pre>
   <font color="blue">
   <p>
-  Open questions and things I'd do with more time:
+  If we had more time, we'd want to make the Zobrist transposition table safe to use for 
+    cutoffs under alpha-beta pruning, not just in plain minimax, which would require 
+    storing an exact/lower-bound/upper-bound flag with each entry. We'd also want to replace the full 
+    <code>static_eval</code> move-ordering heuristic with something cheaper to actually see a speedup.
+    An uncertainty we'd like to explore is how we might tune the defensive bias for the twin agent Bunni
+    by playing Bunni versus Kitti repeatedly and seeing which value wins most often. We'd also
+    like to test more thoroughly against stronger opponents than RandomPlayer.
   </p>
-  <ul>
-    <li>Make the Zobrist transposition table safe to use for direct
-    cutoffs under alpha-beta pruning, not just in plain minimax &mdash;
-    this requires storing an exact/lower-bound/upper-bound flag with each
-    entry (a standard technique) rather than just a raw backed-up value,
-    so a cached entry from a different alpha/beta window can still be used
-    correctly to narrow the current window.</li>
-    <li>Replace the full-<code>static_eval</code> move-ordering heuristic
-    (Extra Credit I-A) with something cheaper to actually realize a
-    wall-clock speedup from the much smaller search tree it produces (see
-    Section 11) &mdash; e.g. a shallow pattern/neighbor-count heuristic,
-    or caching each child's <code>static_eval</code> result so it is not
-    recomputed if that same child is reached again later in the search.</li>
-    <li><s>Give the twin agent an actual behavioral difference, not just a
-    different name.</s> Done: Bunni now uses a <code>defensive_bias</code>
-    weighting in <code>static_eval</code> and tighter dialog thresholds
-    (Section 2b). Remaining idea in this direction: tune
-    <code>defensive_bias</code> itself by actually playing Bunni and Kitti
-    against each other repeatedly and seeing which bias value wins most
-    often, rather than the single hand-picked value (1.8) used now.</li>
-    <li>Test more thoroughly against stronger opponents than
-    <code>RandomPlayer</code> on Five-in-a-Row and Cassini specifically,
-    and stress-test the candidate-restriction move generator against a
-    position where the correct move is far from all existing stones
-    (Section 2c).</li>
-    <li>Part II (dialog/persona utterances) has not yet been implemented
-    in depth and is intentionally left blank in this diary pass.</li>
-  </ul>
   <p>
-  If starting over, I would set up the instrumentation counters (node
-  count, leaf-eval count vs. ordering-eval count, Zobrist read/hit/write
-  counts) from the very beginning rather than adding them midway through
-  the extra-credit work &mdash; several of the useful comparisons in
-  Sections 4 and 11 only became possible once those counters existed, and
-  having them earlier would have made the Section 7 bug easier to spot,
-  too (a sudden unexplained drop in leaf-eval count would have been an
-  immediate red flag).
+  If we were to start over, we would set up the counters for things like node
+  count, leaf-eval count, Zobrist read/hit/write
+  counts, from the very beginning rather than adding them midway through
+  the extra-credit work since many of the useful comparisons in
+  between the algorithms only became possible after adding those counters, and
+  having them earlier would have made bugs easier to spot.
   </p>
   </font>
   </font></td></tr>
