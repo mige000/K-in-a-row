@@ -1039,21 +1039,21 @@ subsection with:
 If you did not complete any extra credit options, omit this section.
   </pre>
   <font color="blue">
-  <p><b>Part I-A: Child ordering by static evaluation</b></p>
+  <p><b>Part I A: Child ordering by static evaluation</b></p>
   <p>
-  In DEMO/COMPETITION modes, <code>_generate_moves_ordered</code> builds the
-  child state for every candidate move and sorts the candidates by
-  <code>static_eval</code> of that child before recursing: descending for
-  X (the maximizer, so the move most favorable to X is tried first) and
-  ascending for O. The intent is the classic alpha-beta result that
-  searching the best move first maximizes the chance that later siblings
-  can be cut off by the current alpha/beta bound.
+  In DEMO and COMPETITION modes, <code>_generate_moves_ordered</code> builds
+  the child state for every possible move and sorts the moves by the
+  <code>static_eval</code> of that child before searching them. X is the
+  maximizer, so its moves are sorted from highest to lowest, and O's moves
+  are sorted from lowest to highest. The idea comes from a standard alpha
+  beta result: if you search the best move first, the later moves are much
+  more likely to get cut off by the current alpha or beta bound.
   </p>
   <p>
-  <i>Measurement.</i> <code>extra_credit_benchmark.py</code> runs a fixed
-  4-ply alpha-beta search from the Cassini initial state (chosen because
-  its two handicap O's give the candidate-restricted move generator
-  something to work with from move 1) with and without this ordering:
+  To measure it, <code>extra_credit_benchmark.py</code> runs the same 4 ply
+  alpha beta search from the Cassini starting state with and without
+  ordering. We used Cassini because its two handicap O's give the move
+  generator something to work with right from move 1.
   </p>
   <pre>
               nodes visited   cutoffs (rate)     leaf evaluations
@@ -1061,61 +1061,61 @@ If you did not complete any extra credit options, omit this section.
   ordering         1097        984  (89.7%)            3309
   </pre>
   <p>
-  Ordering by static eval cut the number of search-tree nodes visited by
-  about 71% (3730 &rarr; 1097) and the number of true leaf evaluations by
-  about 89% (30920 &rarr; 3309), while the per-node cutoff rate also rose
-  slightly (85.7% &rarr; 89.7%). Both configurations picked the same move,
-  as expected since alpha-beta is exact regardless of ordering.
+  Ordering cut the number of nodes visited by about 71%, from 3730 down to
+  1097, and the number of leaf evaluations by about 89%, from 30920 down to
+  3309. The cutoff rate per node also went up a little, from 85.7% to
+  89.7%. Both versions picked the same move, which is what we expected,
+  since alpha beta gives the same answer no matter what order the moves are
+  searched in.
   </p>
   <p>
-  <i>What we learned.</i> The tree-size reduction was far larger than we
-  expected, but it did not translate into a faster wall-clock move in this
-  implementation: ordering requires computing <code>static_eval</code> for
-  every candidate at every internal node it visits (33018 extra "ordering"
-  evaluations here), and because <code>static_eval</code> scans every
-  k-length line on the board, that overhead is roughly as expensive as the
-  leaf evaluations it saves. The lesson is that move-ordering heuristics
-  need to be cheap relative to the thing they are trying to avoid
-  recomputing &mdash; a full static evaluator is a sound, pedagogically
-  clear choice (and is what the assignment asked for), but a production
-  engine would want a much cheaper ordering signal (e.g. a shallow
-  pattern/neighbor count) to actually convert the smaller tree into a
-  wall-clock win, or cache the static evals so they are not recomputed
-  on overlapping subtrees (see Part I-B).
+  <i>What we learned:</i> the tree got a lot smaller than we expected, but
+  the moves didn't actually get faster in real time. Ordering means calling
+  <code>static_eval</code> on every candidate at every internal node, which
+  added 33018 extra evaluations in this test. Since <code>static_eval</code>
+  checks every line of length k on the board, that extra work costs about
+  as much as the leaf evaluations it saves. So the lesson for us was that
+  the ordering step has to be cheap compared to the work it's trying to
+  skip. Using the full static evaluator is a clear choice and it's what the
+  assignment asked for, but to actually make moves faster we'd want
+  something much cheaper for ordering, like a quick count of nearby pieces.
+  Another option is caching the static evals so they don't get recomputed
+  in overlapping parts of the tree, which is part of what Part I B does.
   </p>
 
-  <p><b>Part I-B: Zobrist hashing</b></p>
+  <p><b>Part I B: Zobrist hashing</b></p>
   <p>
-  Zobrist hashing assigns one independent random 64-bit number to every
-  (square, piece) pair on the board (plus one for "it is X's turn" and one
-  for "it is O's turn"), computed once in <code>_init_zobrist</code> when
-  <code>prepare</code> learns the board size. A state's hash is the XOR of
-  the numbers for every occupied square plus the side-to-move number
-  (<code>_zobrist_hash</code>). XOR makes the hash order-independent and
-  cheap to verify, and two different move orders that reach the same board
-  (a transposition) hash identically, so a transposition table keyed by
-  this hash lets the search recognize "I have already solved this position
-  at this depth" and reuse the stored result instead of re-searching it.
+  Zobrist hashing gives every (square, piece) pair on the board its own
+  random 64 bit number, plus one number for "X to move" and one for "O to
+  move." These get generated once in <code>_init_zobrist</code> when
+  <code>prepare</code> learns the board size. To hash a state,
+  <code>_zobrist_hash</code> XORs together the numbers for every occupied
+  square and the number for whose turn it is. Since XOR doesn't care about
+  order, two different move sequences that end up at the same board (a
+  transposition) get the same hash. That lets us use a transposition table
+  keyed by the hash, so the search can recognize a position it has already
+  solved at this depth and reuse the stored result instead of searching it
+  again.
   </p>
   <p>
-  Every table access goes through two small helpers,
-  <code>_tt_read</code>/<code>_tt_write</code>, which keep three counters:
-  writes (every time a node's backed-up value is stored), read attempts
-  (every lookup, hit or miss), and successful attempts/hits (lookups that
-  found a previously stored entry). Those three numbers are returned in
-  the AUTOGRADER-mode stats dict as <code>zobrist_table_num_entries_this_turn</code>,
+  Every table access goes through two small helpers, <code>_tt_read</code>
+  and <code>_tt_write</code>, which keep three counters: writes (every time
+  a node's backed up value gets stored), read attempts (every lookup,
+  whether it finds something or not), and hits (lookups that found a stored
+  entry). These show up in the AUTOGRADER mode stats dict as
+  <code>zobrist_table_num_entries_this_turn</code>,
   <code>zobrist_table_num_reads_this_turn</code>, and
-  <code>zobrist_table_num_hits_this_turn</code>. A hit is only used to
-  short-circuit the search directly when not using alpha-beta pruning and
-  the cached depth is at least the depth remaining (otherwise the cached
-  value could be a pruned bound rather than the exact backed-up value, and
-  reusing it could be unsound); as the extra-credit option notes, cached
-  values are also used to help order children (Part I-A) &mdash; a child
-  whose value is already in the table is scored from the cache instead of
-  calling <code>static_eval</code> again.
+  <code>zobrist_table_num_hits_this_turn</code>. We only use a hit to skip
+  the search directly when alpha beta pruning is off and the stored depth is
+  at least as deep as the depth remaining. With pruning on, the stored value
+  might only be a bound instead of the exact value, so reusing it could give
+  the wrong answer. As the extra credit option describes, we also use stored
+  values to help order children for Part I A. If a child's value is already
+  in the table, we use that instead of calling <code>static_eval</code>
+  again.
   </p>
   <p>
-  <i>Measurement.</i> Same 4-ply Cassini benchmark, with Zobrist hashing
+  We measured it with the same 4 ply Cassini benchmark, with Zobrist hashing
   turned on:
   </p>
   <pre>
@@ -1124,145 +1124,143 @@ If you did not complete any extra credit options, omit this section.
   both           1097          34115               383
   </pre>
   <p>
-  With plain minimax node ordering ("zobrist" row, no I-A ordering), every
-  node is visited exactly once per the usual tree shape, so writes equal
-  read attempts (3730 each) and about 22% of reads (810/3730) found a
-  transposition from elsewhere in the same search. Combined with I-A
-  ordering ("both" row), far fewer nodes are backed up and written
-  (1097), but <code>_ordering_eval</code> adds a read attempt for every
-  candidate at every node it visits (34115 reads total), of which 383 were
-  reused instead of calling <code>static_eval</code> again.
+  The "zobrist" row has no Part I A ordering, so every node gets visited
+  once and writes equal read attempts (3730 each). About 22% of those reads
+  (810 out of 3730) found a transposition from somewhere else in the same
+  search. The "both" row also has ordering on, so far fewer nodes get backed
+  up and written (1097). But <code>_ordering_eval</code> adds a read attempt
+  for every candidate at every node it visits, which brings the total reads
+  to 34115, and 383 of those reused a stored value instead of calling
+  <code>static_eval</code> again.
   </p>
   <p>
-  <i>What we learned.</i> Transpositions are genuinely common in this game
-  even over a short 4-ply search (hundreds of hits), which matches the
-  intuition that K-in-a-Row has many move orders reaching the same board.
-  However, because our transposition table is only safe to use for a direct
-  cutoff in the no-pruning case, most of its value here came from the
-  ordering use case rather than the raw node-skipping use case &mdash; a
-  more sophisticated implementation would store alpha/beta bound flags
-  (exact/lower/upper) with each entry so cached values could also be used
-  safely to narrow the window under alpha-beta pruning, not just to order
-  children.
+  <i>What we learned:</i> transpositions happen a lot in this game, with
+  hundreds of hits even in a short 4 ply search. That makes sense, since K
+  in a Row has lots of different move orders that end up at the same board.
+  But because our table is only safe for skipping the search when pruning is
+  off, most of its value here came from helping with ordering instead of
+  skipping nodes. A better version would store a flag with each entry saying
+  whether the value is exact, a lower bound, or an upper bound. Then stored
+  values could also be used safely to narrow the alpha beta window, not just
+  to order children.
   </p>
 
-  <p><b>Part II: LLM-assisted dialog (Gemini, via the google-genai SDK)</b></p>
+  <p><b>Part II: LLM assisted dialogue (Gemini, through Google's genai SDK)</b></p>
   <p>
   <code>prepare()</code> only imports <code>google.genai</code> when
   <code>self.playing_mode == KAgent.DEMO</code> and
-  <code>utterances_matter</code> is true, exactly as the assignment
-  specifies, and the import plus client construction are wrapped in a
-  <code>try/except</code> that leaves <code>self._llm_client</code> as
-  <code>None</code> on any failure. The API key is resolved from
-  <code>gemini_key_local.py</code> (a file listed in <code>.gitignore</code>)
-  first, then the <code>GEMINI_API_KEY</code> environment variable &mdash;
-  never hard-coded directly into this tracked file. <i>Why:</i> this
-  repository is public on GitHub, and a hard-coded key in a public repo
-  gets scraped by bots within minutes of pushing. A gitignored local file
-  gets the same "it just works, no env var setup" convenience the
-  assignment wants for a direct handoff (zip, email, Canvas upload) to a
-  specific person, without ever risking that key reaching the public repo
-  by an accidental <code>git add -A</code>. Every call site that actually
-  talks to the API is wrapped in its own <code>try/except Exception</code>
-  and returns <code>None</code> on any failure, at which point
-  <code>_generate_utterance</code> falls back to the rule-based
-  <code>KITTI_LINES</code>/<code>BUNNI_LINES</code> bank, so the agent
-  never raises and never stalls waiting on a hung request.
+  <code>utterances_matter</code> is true, just like the assignment says. The
+  import and client setup are wrapped in a <code>try/except</code>, so if
+  anything fails, <code>self._llm_client</code> stays <code>None</code>.
+  The API key is loaded from <code>gemini_key_local.py</code> first, which
+  is listed in <code>.gitignore</code>, and then from the
+  <code>GEMINI_API_KEY</code> environment variable if that file isn't
+  there. We never hard code the key into the tracked file. Our repository is
+  public on GitHub, and bots scrape keys out of public repos within minutes
+  of a push. The gitignored local file means the agent still works without
+  anyone setting up an environment variable when we hand it off directly
+  (zip, email, or Canvas upload), and there's no risk of the key ending up
+  in the public repo if someone accidentally adds every file with git. Every
+  place that actually calls the API has its own <code>try/except</code> that
+  returns <code>None</code> if anything goes wrong. When that happens,
+  <code>_generate_utterance</code> falls back to the if/then lines in
+  <code>KITTI_LINES</code> and <code>BUNNI_LINES</code>, so the agent never
+  crashes and never gets stuck waiting on a request that hangs.
   </p>
   <p>
-  <i>Getting it actually working took real debugging, not just plumbing.</i>
-  We originally built this against Claude (Anthropic's API); when asked to
-  switch to Gemini for easier free-tier sharing, the same design carried
-  over, but live testing against a real key surfaced three real bugs
-  before a single genuine response came through:
-  </p>
-  <ul>
-    <li>Gemini's Flash models spend part of <code>max_output_tokens</code>
-    on hidden "thinking" tokens before writing visible text; at our small
-    token budgets (60-120) this silently returned completely empty
-    responses (<code>finish_reason: MAX_TOKENS</code>, no visible text at
-    all). Diagnosed by inspecting <code>response.candidates[0]</code>
-    directly instead of trusting <code>response.text</code>.</li>
-    <li>A custom 4-second <code>http_options</code> timeout we added as a
-    safety net was rejected outright by the API itself:
-    <code>"Manually set deadline 4s is too short. Minimum allowed deadline
-    is 10s."</code> &mdash; longer than we're willing to wait regardless,
-    so we dropped it in favor of our own client-side cutoff.</li>
-    <li>That client-side cutoff was first built with
-    <code>concurrent.futures.ThreadPoolExecutor</code>, but its default
-    shutdown behavior blocks the whole Python process from exiting until
-    every submitted task finishes &mdash; including an abandoned, still-running
-    slow call. Switched to an explicit <code>threading.Thread(daemon=True)</code>
-    so an abandoned call can keep running in the background without
-    blocking anything.</li>
-  </ul>
-  <p>
-  After those fixes, calls to the default model alias
-  (<code>gemini-flash-latest</code>, which resolved to
-  <code>gemini-3.8-flash</code>) sometimes worked (one genuine success:
-  <i>"weak?? bold words for someone whose pieces i'm about to knock off
-  the board (&#172;&#8255;&#172;) just wait and see &gt;:3"</i>, correctly
-  reacting to an opponent's taunt) but were wildly inconsistent &mdash;
-  anywhere from under a second to <b>145 seconds</b>, and repeatedly
-  hitting both the free tier's 5-requests-per-minute quota (<code>429
-  RESOURCE_EXHAUSTED</code>) and genuine server overload
-  (<code>503 UNAVAILABLE</code>, "this model is currently experiencing
-  high demand") during testing. Tracing a raw exception showed the SDK's
-  own <code>tenacity</code>-based automatic retry logic was quietly
-  retrying overloaded requests with backoff <i>inside</i> the worker
-  thread, which is what turned single calls into multi-minute waits.
+  Getting this to actually work took a lot of debugging. We first built it
+  with Claude (Anthropic's API), and when we decided to switch to Gemini so
+  it would be easier to share on the free tier, the same design carried
+  over. But once we tested with a real key, we hit three bugs before we got
+  a single real response back.
   </p>
   <p>
-  <i>The actual fix:</i> switching to <code>gemini-flash-lite-latest</code>
-  (a lighter model than the "3.8 Flash" the default alias pointed to) and
-  removing the <code>thinking_config</code> parameter entirely &mdash; it
-  turned out to cause a <code>400 INVALID_ARGUMENT</code> specifically on
-  the lite model (it apparently doesn't take that parameter the same way),
-  and empirically the lite model doesn't eat the visible-text budget on
-  hidden thinking the way the heavier model did, so no workaround was even
-  needed. After this change, repeated calls through the actual agent
-  consistently returned genuine, in-character, context-aware responses in
-  <b>well under one second each</b>:
+  The first bug was that Gemini's Flash models spend part of
+  <code>max_output_tokens</code> on hidden "thinking" tokens before writing
+  any visible text. With our small token limits (60 to 120), we were getting
+  completely empty responses back with <code>finish_reason: MAX_TOKENS</code>
+  and no text at all. We found this by looking at
+  <code>response.candidates[0]</code> directly instead of trusting
+  <code>response.text</code>.
   </p>
-  <pre>
-  "oh it's so on &gt;:3 my paws are ready for this (&#65507;&#9661;&#65507;)"           (opening)
-  "wait hold on, my paw slipped (&#65507;&#9661;&#65507;) that eval is literally a lie omg"  (reacting to trash talk)
-  "wait you actually almost had me back there (&#65507;&#9661;&#65507;) but my
-   paws are firmly on the lead now. 60/40 odds says i take this /&#5152; - &#725; -&#12510;"
-                                                        (LLM-enhanced story feature)
-  </pre>
   <p>
-  <i>What we learned.</i> Writing the fallback-safety code was necessary but
-  not sufficient &mdash; a graceful fallback can mask a real, fixable
-  problem (ours was never a key or network issue; it was parameter
-  choices and a model-selection trade-off) if you stop debugging as soon
-  as the fallback makes the agent "work." The three infrastructure bugs
-  (thinking tokens, the rejected timeout, the executor-blocks-exit issue)
-  were all found by deliberately bypassing the try/except to look at raw
-  exceptions and response objects, not by reading documentation first.
-  We'd also flag the lite-vs-full-model choice as a transferable lesson:
-  for a short, low-stakes, single-turn persona line, the "smaller" model
-  was not just cheaper but also more reliable, not a trade-off at all.
+  The second bug was a 4 second timeout we set in <code>http_options</code>
+  as a safety net. The API rejected it outright with the message "Manually
+  set deadline 4s is too short. Minimum allowed deadline is 10s." Ten
+  seconds is longer than we're willing to wait anyway, so we dropped it and
+  used our own cutoff on our end instead.
+  </p>
+  <p>
+  The third bug was in that cutoff. We first built it with
+  <code>concurrent.futures.ThreadPoolExecutor</code>, but by default it
+  keeps the whole Python process from exiting until every task finishes,
+  including slow calls we had already given up on. We switched to a plain
+  <code>threading.Thread(daemon=True)</code> so an abandoned call can keep
+  running in the background without holding anything up.
+  </p>
+  <p>
+  After those fixes, calls to the default Flash model alias (which pointed
+  to Gemini 3.8 Flash) worked sometimes. One real success was <i>"weak??
+  bold words for someone whose pieces i'm about to knock off the board
+  (¬‿¬) just wait and see &gt;:3"</i>, which reacted correctly to the
+  opponent's taunt. But the timing was all over the place, anywhere from
+  under a second to <b>145 seconds</b>. During testing we also kept hitting
+  the free tier's limit of 5 requests per minute (<code>429
+  RESOURCE_EXHAUSTED</code>) and actual server overload (<code>503
+  UNAVAILABLE</code>, "this model is currently experiencing high demand").
+  When we traced a raw exception, we found that the SDK's own automatic
+  retry logic (built on the <code>tenacity</code> library) was quietly
+  retrying overloaded requests with backoff inside our worker thread. That's
+  what turned single calls into waits of several minutes.
+  </p>
+  <p>
+  What actually fixed it was switching to the Flash Lite model alias, which
+  is lighter than the 3.8 Flash model the default alias pointed to, and
+  removing the <code>thinking_config</code> parameter completely. That
+  parameter caused a <code>400 INVALID_ARGUMENT</code> error on the lite
+  model. It also turned out the lite model doesn't use up the visible text
+  budget on hidden thinking the way the bigger model did, so we didn't need
+  a workaround. After that, repeated calls through the actual agent kept
+  returning real, in character responses that fit the game, each in
+  <b>well under a second</b>. For the opening, Kitti said <i>"oh it's so on
+  &gt;:3 my paws are ready for this (￣▽￣)"</i>. When reacting to trash talk,
+  she said <i>"wait hold on, my paw slipped (￣▽￣) that eval is literally a
+  lie omg"</i>. For the LLM enhanced story feature, she said <i>"wait you
+  actually almost had me back there (￣▽￣) but my paws are firmly on the lead
+  now. 60/40 odds says i take this /ᐠ - ˕ -マ"</i>.
+  </p>
+  <p>
+  <i>What we learned:</i> writing the fallback code was necessary, but it
+  wasn't enough on its own. If you stop debugging as soon as the agent seems
+  to "work," a good fallback can hide a real problem you could have fixed.
+  Our problem was never the key or the network. It was the parameters we
+  chose and which model we picked. We found all three setup bugs (the
+  thinking tokens, the rejected timeout, and the executor blocking exit) by
+  purposely skipping the <code>try/except</code> so we could see the raw
+  exceptions and response objects, not by reading the documentation first.
+  We also think the model choice is a useful lesson in general. For a short,
+  single turn persona line where nothing big is at stake, the smaller model
+  wasn't just cheaper, it was also more reliable, so it wasn't really a
+  trade off at all.
   </p>
 
-  <p><b>Part II: mandatory trigger-phrase features</b></p>
+  <p><b>Part II: Required trigger phrase features</b></p>
   <p>
-  Both are implemented as special cases checked before the ordinary
-  IF-THEN bucket logic in <code>_generate_utterance</code>, matching
-  against the opponent's exact last utterance
-  (<code>current_remark</code>), case-insensitively. Both examples below
-  are from the same real, complete Cassini transcript
-  (<code>Kitti-vs-Bunni-in-Cassini-round-1.html/.pdf</code>): Kitti playing
-  her actual twin Bunni, not a scripted stand-in &mdash; Bunni's own
-  search, defensive bias, and persona voice are fully active for the whole
-  game; only her first two utterances are overridden to literally ask
-  these two phrases, early enough that they are guaranteed to reach Kitti
-  before the game can end. Everything else either of them says, including
-  the many genuinely LLM-generated lines in the opening third of this
-  game, is unscripted.
+  Both features are special cases checked before the normal if/then bucket
+  logic in <code>_generate_utterance</code>. They match against the
+  opponent's exact last remark (<code>current_remark</code>), ignoring
+  capitalization. Both examples below come from the same real, complete
+  Cassini game (our Kitti vs Bunni Cassini round 1 transcript, saved as html
+  and pdf). Kitti is playing her actual twin Bunni, not a scripted stand in.
+  Bunni's own search, defensive style, and persona voice are fully on for
+  the whole game. The only thing we changed is that her first two remarks
+  are set to ask these two exact phrases, early enough that Kitti is
+  guaranteed to see them before the game could end. Everything else either
+  of them says is unscripted, including the many LLM generated lines in the
+  first third of the game.
   </p>
   <p>
-  <i>"Tell me how you did that"</i>:
+  When asked "Tell me how you did that," Kitti said:
   </p>
   <pre>
   ok so you asked for it lol (=^･ω･^=) for that move i looked at 129
@@ -1275,59 +1273,56 @@ If you did not complete any extra credit options, omit this section.
   +760, so i was pretty sure about this one (￣▽￣)
   </pre>
   <p>
-  Every number is read directly from this turn's real counters
-  (<code>num_nodes_visited_this_turn</code>, <code>num_leaf_evals_this_turn</code>,
-  <code>max_depth_reached_this_turn</code>, <code>time_elapsed_this_turn</code>,
+  Every number comes straight from that turn's real counters:
+  <code>num_nodes_visited_this_turn</code>,
+  <code>num_leaf_evals_this_turn</code>,
+  <code>max_depth_reached_this_turn</code>,
+  <code>time_elapsed_this_turn</code>,
   <code>alpha_beta_cutoffs_this_turn</code>,
   <code>zobrist_table_num_hits_this_turn</code>,
-  <code>best_score_this_turn</code>/<code>second_best_score_this_turn</code>,
-  the latter two collected via a one-shot flag,
-  <code>_collect_root_scores</code>, that lets <code>minimax()</code>
-  record every root child's exact backed-up value without changing the
-  recursive algorithm itself). This feature never calls the LLM &mdash;
-  it is always the deterministic template, by design, so it is reliable
-  regardless of API availability.
+  <code>best_score_this_turn</code>, and
+  <code>second_best_score_this_turn</code>. The last two get collected with
+  a single use flag, <code>_collect_root_scores</code>, that lets
+  <code>minimax()</code> record the exact backed up value of every root
+  child without changing the recursive algorithm itself. This feature never
+  calls the LLM. It always uses the template on purpose, so it works whether
+  or not the API is available.
   </p>
   <p>
-  <i>"What's your take on the game so far?"</i> &mdash; this one <i>did</i>
-  go through Gemini, since the model responded in time:
+  When asked "What's your take on the game so far?", the answer did go
+  through Gemini, since the model responded in time. Kitti said:
   </p>
   <pre>
   wait no way (・・?) i totally clawed my way back after move two! i'm
   betting on myself for this one (￣▽￣)
   </pre>
   <p>
-  This comes from <code>_story_and_prediction()</code>, which scans
-  <code>self.game_history</code> (appended to every turn by
-  <code>_record_turn</code>) for the largest-magnitude eval swings between
-  consecutive moves and builds a template narrative with a win/loss
-  prediction; <code>_llm_story</code> then feeds that template to Gemini
-  as factual context and asks for its own phrasing. Here Gemini's version
-  keeps the template's actual content (acknowledging the swing right
-  after move 2, then giving a confident prediction) while rephrasing it
-  entirely in Kitti's own voice, which is exactly the intended behavior:
-  the template guarantees the facts are right, and the LLM is only
-  responsible for how it's said.
+  This comes from <code>_story_and_prediction()</code>, which looks through
+  <code>self.game_history</code> (added to every turn by
+  <code>_record_turn</code>) for the biggest eval swings between moves and
+  builds a template story with a win or loss prediction. Then
+  <code>_llm_story</code> gives that template to Gemini as the facts and
+  asks it to say it in its own words. Gemini's version keeps what the
+  template actually said (the comeback right after move 2 and a confident
+  prediction) but says it completely in Kitti's voice. That's exactly what
+  we wanted: the template makes sure the facts are right, and the LLM only
+  decides how it sounds.
   </p>
   <p>
-  <i>What the rest of this transcript shows, honestly.</i> The first 13
-  utterances in this game (both personas, including both trigger-phrase
-  responses above) are genuinely LLM-generated &mdash; e.g. Kitti's
-  opening line, <i>"oh no it's not, i'm already miles ahead ₍^. .^₎⟆
-  paws down this match is mine!"</i>, and Bunni's own reply a few turns
-  later, <i>"thump thump... my ears just went straight up at that! (&gt;_&lt;)
-  i'm keeping all my walls reinforced though, gotta stay safe. (^w^)
-  ~hop~"</i> &mdash; each clearly in that persona's distinct voice, not a
-  generic one. Partway through this 44-turn game the free tier's request
-  quota caught up with us and every later utterance quietly fell back to
-  the IF-THEN templates for the rest of the game (which still ends in a
-  draw with no errors). Rather than regenerate until we got a cleaner
-  run, we kept this transcript as-is: it is a more honest demonstration
-  of the actual required behavior than a cherry-picked one would be,
-  since it shows the feature genuinely working <i>and</i> shows the
-  required graceful degradation, in one real game. The draw itself turned
-  out to be normal for this matchup, not a sign anything was wrong (see
-  the investigation in Section 7).
+  To be honest about the rest of this transcript, the first 13 remarks in
+  the game (from both personas, including both trigger phrase answers above)
+  really were generated by the LLM. For example, Kitti's opening line was
+  <i>"oh no it's not, i'm already miles ahead ₍^. .^₎⟆ paws down this match
+  is mine!"</i> and a few turns later Bunni said <i>"thump thump... my ears
+  just went straight up at that! (&gt;_&lt;) i'm keeping all my walls
+  reinforced though, gotta stay safe. (^w^) ~hop~"</i>. Each one clearly
+  sounds like that persona and not a generic one. Partway through this 44
+  turn game we ran out of free tier requests, and every remark after that
+  quietly fell back to the if/then templates for the rest of the game, which
+  still ended in a draw with no errors. We decided not to keep rerunning
+  until we got a cleaner game. We kept this transcript as is because it's a
+  more honest demo than a cherry picked one would be. It shows the feature
+  really working and the fallback working, all in one real game.
   </p>
   </font>
   </font></td></tr>
