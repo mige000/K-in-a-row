@@ -917,9 +917,9 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
     PERSONA_FLAVOR = {
         'kitti': {
             'stats_open': ("ok so you asked for it lol (=^･ω･^=) for that "
-                          "move i looked at {nodes:,} positions total, and "
-                          "{leaves:,} of those were leaf positions i "
-                          "actually scored."),
+                          "move i expanded {nodes:,} positions in my search "
+                          "tree, and scored {leaves:,} leaf positions along "
+                          "the way."),
             'tired_tag': "i'm slow ok ;-;",
             'cutoff_tag': "^-^",
             'zobrist_hit': ("my zobrist table saved me {hits:,} times from "
@@ -937,9 +937,9 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
         },
         'bunni': {
             'stats_open': ("ok you asked so here's the breakdown (^-^)v for "
-                          "that move i checked {nodes:,} positions total, "
-                          "and {leaves:,} of those were leaf spots i "
-                          "actually scored."),
+                          "that move i checked {nodes:,} positions in my "
+                          "search tree, and scored {leaves:,} leaf spots "
+                          "along the way."),
             'tired_tag': "my ears get tired too >.<",
             'cutoff_tag': "^w^",
             'zobrist_hit': ("my memory burrow saved me {hits:,} re-checks "
