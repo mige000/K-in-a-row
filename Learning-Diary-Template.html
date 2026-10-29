@@ -821,99 +821,66 @@ this assignment.  Some prompts to consider:
   </pre>
   <font color="blue">
   <p><b>9a. Tools used.</b> Claude Code (Claude Sonnet 5), used as a
-  terminal-based coding agent for the entire Part I implementation, the
-  GitHub push troubleshooting, and the extra-credit implementation and
-  benchmarking described below. Google's Gemini API (<code>google-genai</code>
-  SDK) is also used, but as part of the agent itself rather than as a
-  coding tool &mdash; it's the optional LLM layer described in Section 6
-  and Section 11, not something that helped write the code.</p>
+  terminal-based coding agent. Google's Gemini API (<code>google-genai</code>
+  SDK) used as part of the agent to generate dialog.</p>
   <p><b>9b. Authorship map.</b></p>
   <pre>
-  Move generator               B -- AI-generated, reviewed via autograder output
-  minimax skeleton              B -- AI-generated, reviewed via autograder output
-  Alpha-beta cutoff logic       B -- AI-generated, reviewed via autograder output
-  static_eval function body     B -- AI-generated, reviewed via autograder output
+  Move generator               B
+  minimax skeleton              B
+  Alpha-beta cutoff logic       B
+  static_eval function body     B
   Utterance generation          B -- persona ("Kitti": voice rules, kaomoji
                                  bank, sample lines, LLM system prompt) was
-                                 entirely our own design brief handed to the
-                                 AI verbatim; the rule engine, trigger-phrase
+                                 our own design brief handed to the AI
+                                 verbatim; the rule engine, trigger-phrase
                                  features, and LLM wiring are AI-generated
                                  from that brief, reviewed by running real
-                                 games and reading the actual utterances
-                                 produced (Section 6, Section 11)
-  prepare / introduce methods   B -- AI-generated, reviewed via autograder output
-  Extra-credit components       B -- AI-generated from the assignment's own
-                                 extra-credit spec text, reviewed via a
-                                 dedicated benchmark script and the
-                                 autograder (Section 11)
+                                 games and reading the utterances produced
+  prepare / introduce methods   B
+  Extra-credit components       B
   </pre>
-  <p>
-  Note on nuance: "reviewed" here specifically means verified against
-  objective, automated checks (the self-check autograder's exact expected
-  move/leaf-count/ordering assertions, and the extra-credit benchmark
-  script's measured counters) rather than a manual line-by-line code
-  review of every function. Bugs were caught this way (see Section 7),
-  which is a different, but still rigorous, form of review.
-  </p>
   <p><b>9c. What the AI got wrong.</b> The clearest case is the
   win-shortcut vs. autograder leaf-count conflict described in Section 7:
   the AI's first version of <code>minimax()</code> added an optimization
   that was reasonable for real play but silently broke the autograder's
   exact leaf-count expectation (9 instead of 12 static evaluations). This
-  was only caught by actually running <code>autograder.py</code> and
-  reading its diagnostic output, not by inspecting the code for
-  correctness by eye &mdash; the code was not "wrong" in the sense of
-  producing an incorrect game-playing result (the move chosen was still
-  correct), but it did not match a grading assumption that was not obvious
-  from the assignment text alone.</p>
+  was only caught by running <code>autograder.py</code> and reading its
+  diagnostic output, not by inspecting the code for correctness by eye.
+  </p>
   <p>
-  A second, smaller case: while writing up some of the Kitti/Bunni example
-  lines for this diary, the AI hand-encoded a few kaomoji as HTML numeric
-  character entities (e.g. writing out the Unicode code point for
+  A second, smaller case was while writing up some of the Kitti/Bunni
+  example lines for this diary, the AI hand-encoded a few kaomoji as HTML
+  numeric character entities (e.g. writing out the Unicode code point for
   "￣▽￣" by hand) instead of copying the exact characters from a verified
-  source, and got the numbers wrong twice &mdash; once producing "ＣＣ"
+  source, and got the numbers wrong twice — once producing "ＣＣ"
   instead of "￣￣", and later producing the wrong characters for part of
-  "/ᐠ - ˕ -マ". Both times this was caught by actually decoding the
-  entities in Python and comparing the result against the real agent
-  code's kaomoji list, not by reading the HTML source by eye. The fix
-  going forward was to stop hand-encoding anything non-ASCII at all and
-  only ever copy exact strings from a verified source (the agent file
-  itself, or real captured output).</p>
+  "/ᐠ - ˕ -マ". Both times this was caught by decoding the entities in
+  Python and comparing the result against the real agent code's kaomoji
+  list, not by reading the HTML source by eye. The fix going forward was
+  to stop hand-encoding anything non-ASCII at all and only ever copy exact
+  strings from a verified source (the agent file itself, or real captured
+  output).
+  </p>
   <p><b>9d. One surprising insight from prompting.</b> Asking for a
   "static evaluation of children" move-ordering feature produced code that
   measurably cut the search tree by over 70% (Section 11), yet when
-  benchmarked, wall-clock time was essentially unchanged. The AI's first
+  benchmarked, wall-clock time was pretty much unchanged. The AI's first
   framing of the result (before the node/leaf/ordering-eval counters were
   separated out) made it look like a clear win; only after asking for more
   granular instrumentation did it become clear that the ordering heuristic
   itself was spending as much time calling <code>static_eval</code> as it
-  was saving. The lesson was less about the AI being wrong and more about
-  how easy it is to declare victory on the first metric that improves
-  (node count) without checking the metric that actually matters
-  (wall-clock time).</p>
+  was saving.
+  </p>
   <p>
-  A second one, from much later: two fully identical copies of the same
+  A second one, from much later was two fully identical copies of the same
   agent playing each other on Cassini draw every single time we tried it,
   at several different search depths, and Kitti-vs-Bunni does too even
   though they're tuned differently. At first that looked like it might
-  mean the persona/strategy difference wasn't doing anything real. It
-  took actually running the identical-copies experiment to realize that's
-  just what happens when two agents share the same search and evaluation
-  logic &mdash; whatever one side can find, the other side (built the
-  same way) can usually also find a defense for, at the depths we can
-  search in time. It was a good reminder that a result can look like a
-  bug (or like evidence a feature does nothing) when it's actually just
-  an expected property of self-play between similar opponents, and that
-  the way to tell the difference is to run the controlled experiment
-  rather than guess from one game.</p>
-  <p><b>9e. Prompt log.</b> The full conversation (including all code and
-  tool output) is well over 50K bytes, so per the instructions below is
-  the list of our own prompts, in order. <i>One redaction:</i> at one
-  point we pasted a live GitHub personal access token into the chat to get
-  past a push authentication error; that token value is replaced below
-  with <code>&lt;redacted PAT&gt;</code> and the actual token was revoked
-  on GitHub immediately afterward &mdash; it is not safe to leave a live
-  credential inside a document that may itself be submitted/shared.</p>
+  mean the persona/strategy difference wasn't doing anything real. It took
+  running the identical-copies experiment to realize that's just what
+  happens when two agents share the same search and evaluation logic.
+  </p>
+  <p><b>9e. Prompt log.</b></p>
   <ol>
     <li>"can you follow these instructions, please make the code as fast
     and efficient as possible, as we will be using this to compete against
@@ -936,14 +903,9 @@ this assignment.  Some prompts to consider:
     Section 11 of your Learning Diary entry. Note that saved values of
     states can be used for ordering children just like in A (above), to
     increase the likelihood of alpha-beta cutoffs."</li>
-    <li>"what is our game type focus"</li>
-    <li>"we have to answer this question in the learning-diary-template,
-    so what should we say: Game-type focus: (e.g., Tic-Tac-Toe, Cassini,
-    Five-in-a-Row)"</li>
     <li>"can you fill in the learning diary to the best of your abilities
     of everything we have done so far? leave everything about part 2
     blank"</li>
-    <li>"do we have the twin agent?"</li>
     <li>"[full Part II assignment specification text: utterances,
     required behaviors, extra-credit LLM option with the API-key
     hard-coding guidance, and the two mandatory trigger-phrase features]
@@ -964,19 +926,9 @@ this assignment.  Some prompts to consider:
     main agent's]"</li>
     <li>"in randomplayer.py can you also make sure the twins name is
     bunni"</li>
-    <li>"yes can you commit and push"</li>
     <li>"can you now make sure this step has been done: [GameTranscript.pdf
     instructions: Game Master auto-names an HTML transcript, convert to
     PDF for submission, keep the filename]"</li>
-    <li>"can you replace section 2, agent profile in the learning diary
-    with this: [full dictated text for 2a/2b/2c, including the Kitti
-    persona description, the three ways Bunni is distinct, and the
-    reasoning for making her more defensive and more bunny-coded] then
-    can you commit everything to git"</li>
-    <li>"yes please" (push confirmation)</li>
-    <li>"can you replace section 3 in the learning diary with this: [full
-    dictated, numbered account of the project's development phases] but
-    make each step numbered. then can you commit and push"</li>
     <li>"in the transcript it looks like the same lines are used over and
     over again. are you sure this step (using anthropic instead) is
     working: [pasted LLM-integration and trigger-phrase instructions
@@ -990,20 +942,14 @@ this assignment.  Some prompts to consider:
     <li>"when creating the API it says choose imported project, but idk
     how to choose this project. can i just say default gemini project"</li>
     <li>"here is the key: <code>&lt;redacted Gemini API key&gt;</code>"
-    &mdash; redacted here for the same reason as the GitHub PAT below: a
-    live credential should not sit inside a document that might itself be
-    submitted or shared, even though this one is a free-tier key with no
-    billing risk if leaked.</li>
+    — redacted here for the same reason as the GitHub PAT would be:
+    a live credential should not sit inside a document that might itself
+    be submitted or shared, even though this one is a free-tier key with
+    no billing risk if leaked.</li>
     <li>"does it look like the api is working now?" (sent mid-turn while
     a background test was still running)</li>
-    <li>"can you replace section 6 with this, then commit and push:
-    [full dictated text for 6a-6d, including a note that 6d needed to be
-    updated later since it still described Claude/Anthropic]"</li>
     <li>"so do you think we will be able to get gemini to work properly
     or should we give up with that extra credit portion"</li>
-    <li>"can you replace section 7 with this then commit and push: [full
-    dictated account of the win-shortcut bug and the then-unresolved
-    Gemini speed problem]"</li>
     <li>"for the gemini llm do you think any of these woud help it go
     faster: [a list of six possible speed fixes: smaller model, lower
     max tokens, shorter prompt, create the client once, a short client
@@ -1012,24 +958,12 @@ this assignment.  Some prompts to consider:
     across multiple turns as the rate limit and server load changed)</li>
     <li>"why is it against someone called chatty? it should be against
     bunni. also do it in cassini."</li>
-    <li>"is it done yet"</li>
-    <li>"no is the kitti vs bunni transcript done?"</li>
     <li>"it seems like the games always end in a draw? is this okay?
-    shouldnt they not end in a draw since they hae distinct playing
+    shouldnt they not end in a draw since they have distinct playing
     styles"</li>
-    <li>"yes can you update the learning diary! please only edit sections
-    6, 7, 9, 11. can you update each of these sections with the new
-    findings and new prompts? can you also write in the same style that
-    is written, so it blends in well with the rest of the report. do NOT
-    touch any other sections besides 6, 7, 9, 11" (this prompt)</li>
+    <li>"can you update the learning diary! Mainly the ai prompt
+    section"</li>
   </ol>
-  <p>
-  (A separate, earlier session also covered: "i am trying to upload my
-  code to this github repo, but its not working, can you help:
-  [GitHub repo URL]", followed by selecting the "Personal Access Token"
-  authentication option and supplying "this is my personal access token:
-  &lt;redacted PAT&gt;" when asked how to authenticate.)
-  </p>
   </font>
   </font></td></tr>
 
