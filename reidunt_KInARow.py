@@ -44,6 +44,14 @@ import threading
 
 WIN_SCORE = 1.0e9
 
+# Hard-coded so staff/graders can run the LLM-backed dialog with zero
+# setup, per the assignment's own suggestion. This is a free-tier Gemini
+# key with no billing attached -- the worst case if it's scraped/misused
+# is the request quota running out, not an unexpected bill. If this key
+# stops working (rotated, revoked, or quota exhausted), the agent still
+# plays normally; it just falls back to the hand-written IF-THEN lines.
+HARDCODED_GEMINI_API_KEY = "AQ.Ab8RN6J0j8B6ytVxilJBKF16tdzd5EvoMRE9evzDIcY5NOcQxQ"
+
 # ----------------------------------------------------------------------
 # Kaomoji safety net (provided form in the assignment spec): collapses any
 # run of two-or-more kaomoji in a row (whether hand-written or LLM-written)
@@ -234,22 +242,24 @@ class OurAgent(KAgent):  # Keep the class name "OurAgent" so a game master
         # always has a full non-LLM fallback for every situation.
         #
         # Key resolution order (first one found wins):
-        #   1. gemini_key_local.py -- a file listed in .gitignore, so it can
-        #      never end up in the public repo even by accident. If you
-        #      want to hand these files directly to someone (a grader, a
-        #      friend) and have the LLM "just work" with no setup on their
-        #      end, put your key in that file and send it ALONGSIDE this
-        #      one -- never push a copy of that file anywhere public.
-        #   2. the GEMINI_API_KEY environment variable (for anyone who'd
-        #      rather configure it that way, e.g. course staff).
+        #   1. HARDCODED_GEMINI_API_KEY below -- so staff/graders can run
+        #      this file as-is with no setup, per the assignment's own
+        #      suggestion. This is a free-tier Gemini key with no billing
+        #      attached, so the worst case if it's misused by someone else
+        #      is the quota running out, not a bill.
+        #   2. gemini_key_local.py -- a file listed in .gitignore, for our
+        #      own local testing with a different key without editing this
+        #      tracked file.
+        #   3. the GEMINI_API_KEY environment variable.
         self._llm_client = None
         if self.playing_mode == KAgent.DEMO and utterances_matter:
             try:
-                api_key = None
-                try:
-                    from gemini_key_local import GEMINI_API_KEY as api_key
-                except ImportError:
-                    api_key = os.environ.get('GEMINI_API_KEY')
+                api_key = HARDCODED_GEMINI_API_KEY or None
+                if not api_key:
+                    try:
+                        from gemini_key_local import GEMINI_API_KEY as api_key
+                    except ImportError:
+                        api_key = os.environ.get('GEMINI_API_KEY')
                 if api_key:
                     from google import genai  # not imported at module level on purpose
                     self._llm_client = genai.Client(api_key=api_key)
